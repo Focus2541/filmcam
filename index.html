@@ -174,7 +174,15 @@ const FILMS=[
  {id:'lomo100',name:'Lomo 100',iso:100,c:['#d9262a','#111'],con:1.35,sat:1.35,vig:.35,sh:[0,0,.05],hi:[.05,.04,-.03],grain:.05},
  {id:'noir3200',name:'Noir 3200',iso:3200,c:['#000','#888'],bw:true,exp:-.05,con:1.45,grain:.2},
  {id:'sepia100',name:'Sepia 100',iso:100,c:['#704214','#f1dcb5'],bw:true,sepia:true,fade:.06,sh:[.07,.02,-.05],hi:[.06,.03,-.04],grain:.05},
- {id:'silver100',name:'Silver 100',iso:100,c:['#c9ccd1','#333'],bw:true,con:1.05,fade:.02,grain:.04}
+ {id:'silver100',name:'Silver 100',iso:100,c:['#c9ccd1','#333'],bw:true,con:1.05,fade:.02,grain:.04},
+ {id:'moody400',name:'Moody 400',iso:400,dark:1,c:['#2b2f36','#9aa3ad'],exp:-.25,con:1.2,sat:.75,temp:-.1,fade:.03,sh:[-.01,.01,.03],hi:[.02,.01,-.01],grain:.07,vig:.2},
+ {id:'darkteal',name:'Dark Teal',iso:400,dark:1,c:['#0f3d3e','#e08a4a'],exp:-.2,con:1.25,sat:.85,temp:-.2,sh:[-.04,.03,.06],hi:[.05,.02,-.03],grain:.05,vig:.25},
+ {id:'bleach',name:'Bleach Bypass',iso:200,dark:1,c:['#6e6e6e','#d8d8d8'],exp:-.1,con:1.45,sat:.45,grain:.06,vig:.15},
+ {id:'matte',name:'Matte Shadow',iso:400,dark:1,c:['#1a1a1a','#5a5a5a'],exp:-.2,con:1.15,sat:.7,fade:.08,sh:[0,0,.02],grain:.06,vig:.2},
+ {id:'midnight1600',name:'Midnight 1600',iso:1600,dark:1,c:['#0c1530','#4a6cff'],exp:-.35,con:1.3,sat:.7,temp:-.45,sh:[-.02,0,.06],grain:.14,halo:.3,vig:.3},
+ {id:'ember800',name:'Ember 800',iso:800,dark:1,c:['#2a0f08','#ff6a2a'],exp:-.25,con:1.3,sat:.9,temp:.4,sh:[.02,-.01,-.03],hi:[.06,.02,-.04],grain:.08,halo:.35,vig:.3},
+ {id:'forest',name:'Forest Dark',iso:200,dark:1,c:['#13291c','#9cc48a'],exp:-.2,con:1.2,sat:.8,tint:.25,sh:[-.03,.03,0],hi:[.03,.02,-.02],grain:.06,vig:.25},
+ {id:'inknoir',name:'Ink Noir',iso:1600,dark:1,c:['#000','#444'],bw:true,exp:-.25,con:1.6,grain:.12,vig:.3}
 ];
 
 /* ================= STATE ================= */
@@ -231,7 +239,7 @@ function pick(kind){
   let icon;
   if(kind==='film'){const[c1,c2]=it.c;icon=`<div class="can" style="background:linear-gradient(#2a2a2a 0 12%,${c2} 12% 34%,${c1} 34% 66%,${c2} 66% 88%,#2a2a2a 88%)"></div>`}
   else icon=`<div class="ic">${kind==='lens'?(it.circle?'🐟':'🔘'):it.ic}</div>`;
-  o.innerHTML=`${icon}<b>${it.name}</b><span>${kind==='film'?'ISO '+it.iso+(it.bw?' · ขาวดำ':''):it.sub}</span>`;
+  o.innerHTML=`${icon}<b>${it.name}</b><span>${kind==='film'?'ISO '+it.iso+(it.dark?' · โทนมืด':'')+(it.bw?' · ขาวดำ':''):it.sub}</span>`;
   o.onclick=()=>{S[kind]=it;LS.set(kind,it.id);applyUI();closeSheet();toast(it.name)};
   box.appendChild(o);
  });
