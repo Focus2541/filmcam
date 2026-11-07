@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#121110">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>FilmCam — กล้องฟิล์มฟรี</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+:root{--bg:#121110;--panel:#24211e;--line:#3a3530;--ink:#f2ede4;--mute:#a49b8f;--amber:#f2a93b}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans Thai",sans-serif;overscroll-behavior:none}
+body{display:flex;flex-direction:column;height:100dvh;user-select:none;-webkit-user-select:none}
+button{font:inherit;cursor:pointer}
+.top{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 10px) 14px 6px}
+.counter{background:#d9d2c3;color:#1a1714;font:700 18px ui-monospace,Menlo,monospace;padding:5px 10px;border-radius:6px;box-shadow:inset 0 2px 5px #0007;min-width:54px;text-align:center;border:none}
+.brand{flex:1;text-align:center;font-size:11px;letter-spacing:3px;color:var(--mute)}
+.iconbtn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink);display:grid;place-items:center;font-size:18px;padding:0}
+.iconbtn.on{background:var(--amber);color:#1a1714;border-color:var(--amber)}
+.vf-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:6px 14px;min-height:0}
+.vf{position:relative;overflow:hidden;border-radius:4px;background:#000;box-shadow:0 0 0 3px #000,0 0 0 5px #2c2824}
+.vf video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform-origin:center}
+.vf .vig,.vf .grid,.vf .circle{position:absolute;inset:0;pointer-events:none}
+.vf .grid{background:linear-gradient(90deg,transparent 33.1%,#fff3 33.3%,transparent 33.5%,transparent 66.4%,#fff3 66.6%,transparent 66.8%),linear-gradient(180deg,transparent 33.1%,#fff3 33.3%,transparent 33.5%,transparent 66.4%,#fff3 66.6%,transparent 66.8%)}
+.vf .circle{border-radius:50%;box-shadow:0 0 0 999px #000;display:none}
+.vf .stamp{position:absolute;right:6%;bottom:5%;font:600 15px ui-monospace,Menlo,monospace;color:#ff8a2a;text-shadow:0 0 5px #ff6a00;letter-spacing:2px;opacity:.85;pointer-events:none}
+.vf .msg{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:24px;color:var(--mute);font-size:14px;line-height:1.6}
+.vf .dev{position:absolute;inset:0;display:none;place-items:center;background:#000a;font-size:14px;color:var(--amber);letter-spacing:1px}
+.flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .3s;z-index:50}
+.selectors{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px 14px 4px}
+.sel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:8px 6px;color:var(--ink);text-align:center;min-width:0}
+.sel small{display:block;font-size:10px;letter-spacing:1.5px;color:var(--mute)}
+.sel b{display:block;font-size:13px;color:var(--amber);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bottom{display:flex;align-items:center;justify-content:space-around;padding:10px 20px calc(env(safe-area-inset-bottom) + 18px)}
+.shutter{width:80px;height:80px;border-radius:50%;border:5px solid #d9d2c3;background:radial-gradient(circle at 40% 35%,#fff,#e6e0d4);box-shadow:0 0 0 3px #000 inset,0 4px 14px #0008;padding:0}
+.shutter:active{transform:scale(.92)}
+.thumb{width:54px;height:54px;border-radius:10px;border:2px solid var(--line);background:#000 center/cover no-repeat;padding:0}
+.scrim{position:fixed;inset:0;background:#000a;opacity:0;pointer-events:none;transition:opacity .25s;z-index:15}
+.scrim.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:78dvh;background:#1b1917;border-radius:20px 20px 0 0;transform:translateY(105%);transition:transform .28s;z-index:20;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+.sheet.open{transform:none}
+.sheet .grab{width:40px;height:4px;border-radius:2px;background:#555;margin:10px auto 0}
+.sheet h3{margin:0;padding:10px 18px 8px;font-size:16px}
+.opts{overflow:auto;padding:4px 14px 22px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.opt{background:var(--panel);border:2px solid transparent;border-radius:14px;padding:10px 6px;color:var(--ink);text-align:center}
+.opt.active{border-color:var(--amber);background:#2e2924}
+.opt .ic{font-size:28px;height:46px;display:grid;place-items:center}
+.opt .can{width:30px;height:44px;margin:0 auto 4px;border-radius:5px;box-shadow:inset -4px 0 6px #0005}
+.opt b{font-size:12px;display:block}
+.opt span{font-size:10px;color:var(--mute);display:block;margin-top:2px}
+.rows{padding:4px 18px 22px;overflow:auto}
+.row{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line);font-size:14px}
+.row input[type=checkbox]{width:22px;height:22px;accent-color:var(--amber)}
+.row select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit}
+.note{font-size:12px;color:var(--mute);line-height:1.6;padding-top:12px}
+.full{position:fixed;inset:0;background:var(--bg);z-index:30;display:none;flex-direction:column}
+.full.open{display:flex}
+.fhead{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top) + 10px) 14px 10px}
+.fhead h2{flex:1;margin:0;font-size:17px}
+.ggrid{flex:1;overflow:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:3px;align-content:start}
+.ggrid img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#222}
+.empty{grid-column:1/-1;text-align:center;color:var(--mute);padding:60px 20px;font-size:14px}
+.viewer{flex:1;display:flex;align-items:center;justify-content:center;padding:10px;min-height:0}
+.viewer img{max-width:100%;max-height:100%;box-shadow:0 6px 30px #000}
+.vmeta{text-align:center;font-size:12px;color:var(--mute);padding:4px}
+.vbar{display:flex;gap:10px;padding:10px 14px calc(env(safe-area-inset-bottom) + 16px)}
+.vbar button{flex:1;padding:12px 4px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:14px}
+.vbar .pri{background:var(--amber);color:#1a1714;border-color:var(--amber);font-weight:700}
+.toast{position:fixed;left:50%;bottom:150px;transform:translateX(-50%);background:#000d;color:#fff;padding:9px 16px;border-radius:20px;font-size:13px;opacity:0;transition:opacity .25s;z-index:60;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <button class="counter" id="counter" title="เปลี่ยนม้วนใหม่">36</button>
+  <div class="brand">FILMCAM</div>
+  <button class="iconbtn" id="btnImport" title="นำเข้ารูป">🖼️</button>
+  <button class="iconbtn" id="btnTorch" title="แฟลช" style="display:none">⚡</button>
+  <button class="iconbtn" id="btnSettings" title="ตั้งค่า">⚙️</button>
+</div>
+
+<div class="vf-wrap" id="wrap">
+  <div class="vf" id="vf">
+    <video id="video" playsinline muted autoplay></video>
+    <div class="vig" id="vig"></div>
+    <div class="grid" id="grid"></div>
+    <div class="circle" id="circle"></div>
+    <div class="stamp" id="stamp"></div>
+    <div class="msg" id="msg">กำลังเปิดกล้อง…</div>
+    <div class="dev" id="dev">กำลังล้างฟิล์ม…</div>
+  </div>
+</div>
+
+<div class="selectors">
+  <button class="sel" data-kind="cam"><small>CAMERA</small><b id="lblCam"></b></button>
+  <button class="sel" data-kind="lens"><small>LENS</small><b id="lblLens"></b></button>
+  <button class="sel" data-kind="film"><small>FILM</small><b id="lblFilm"></b></button>
+</div>
+
+<div class="bottom">
+  <button class="thumb" id="thumb" title="อัลบั้ม"></button>
+  <button class="shutter" id="shutter" title="ถ่าย"></button>
+  <button class="iconbtn" id="btnFlip" title="สลับกล้อง" style="width:54px;height:54px;font-size:22px">🔄</button>
+</div>
+
+<input type="file" id="fileIn" accept="image/*" multiple hidden>
+<div class="flash" id="flash"></div>
+<div class="scrim" id="scrim"></div>
+
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <h3 id="sheetTitle"></h3>
+  <div id="sheetBody"></div>
+</div>
+
+<div class="full" id="gallery">
+  <div class="fhead"><button class="iconbtn" id="gClose">←</button><h2>อัลบั้มฟิล์ม</h2><span id="gCount" style="color:var(--mute);font-size:13px"></span></div>
+  <div class="ggrid" id="ggrid"></div>
+</div>
+
+<div class="full" id="viewerWrap" style="z-index:35">
+  <div class="fhead"><button class="iconbtn" id="vClose">←</button><h2 id="vTitle"></h2></div>
+  <div class="viewer"><img id="vImg" alt=""></div>
+  <div class="vmeta" id="vMeta"></div>
+  <div class="vbar">
+    <button class="pri" id="vSave">⬇️ บันทึก</button>
+    <button id="vShare">📤 แชร์</button>
+    <button id="vDel">🗑️ ลบ</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* ================= DATA ================= */
+const CAMS=[
+ {id:'classic',name:'Classic S',sub:'35mm · 2:3',ic:'📷',aspect:2/3,stamp:true},
+ {id:'instant',name:'Instant Square',sub:'ขอบโพลารอยด์',ic:'🖼️',aspect:1,frame:'instant',stamp:false},
+ {id:'toy',name:'Toy Plastic',sub:'1:1 · แสงรั่ว',ic:'🧸',aspect:1,leak:true,stamp:true},
+ {id:'half',name:'Half Frame',sub:'3:4 · ขอบฟิล์ม',ic:'🎞️',aspect:3/4,frame:'strip',stamp:false},
+ {id:'disposable',name:'Disposable',sub:'2:3 · แฟลชจัด',ic:'📦',aspect:2/3,stamp:true,leak:true,punch:true},
+ {id:'wide',name:'Panorama',sub:'ภาพยาว 1:2',ic:'🌄',aspect:1/2,stamp:true}
+];
+const LENSES=[
+ {id:'35',name:'35mm f2',sub:'มาตรฐาน',vig:.22},
+ {id:'28',name:'28mm Wide',sub:'กว้างนิดๆ',vig:.32,k:.12},
+ {id:'50',name:'50mm f1.4',sub:'ซูมเล็กน้อย',vig:.25,zoom:1.25,soft:.12},
+ {id:'85',name:'85mm Portrait',sub:'ซูม 1.7x',vig:.3,zoom:1.7,soft:.15},
+ {id:'soft',name:'Soft-Focus',sub:'ฟุ้งฝัน',vig:.3,soft:.5},
+ {id:'fish',name:'Fisheye 8mm',sub:'ตาปลาวงกลม',vig:.45,k:.9,circle:true}
+];
+// exp, con(S-curve), sat, temp(+warm), tint(+green), fade, sh/hi = shadow/highlight color shift, grain, halo, bw
+const FILMS=[
+ {id:'golden200',name:'Golden 200',iso:200,c:['#f2a93b','#fff1d0'],exp:.05,con:1.08,sat:1.1,temp:.5,fade:.04,sh:[.02,0,-.02],hi:[.04,.02,-.04],grain:.05,halo:.25},
+ {id:'tungsten800',name:'Tungsten 800',iso:800,c:['#2f62c9','#dfe8ff'],con:1.1,sat:.95,temp:-.6,fade:.05,sh:[-.02,.01,.05],hi:[0,.01,.04],grain:.09,halo:.35},
+ {id:'instantfade',name:'Instant Fade',iso:100,c:['#e8e1d3','#7fb0c9'],con:.85,sat:.8,temp:.15,fade:.12,sh:[.03,.03,.06],hi:[.03,.02,-.02],grain:.04},
+ {id:'charcoal400',name:'Charcoal 400',iso:400,c:['#222','#e0e0e0'],bw:true,con:1.25,grain:.1,fade:.03},
+ {id:'skin160',name:'Skin 160',iso:160,c:['#e7c9a3','#fff'],con:.95,sat:.9,temp:.2,fade:.05,hi:[.03,.01,0],grain:.03,halo:.15},
+ {id:'vivid50',name:'Vivid 50',iso:50,c:['#1f9d55','#fff'],con:1.2,sat:1.4,temp:.05,sh:[0,0,.02],grain:.02},
+ {id:'coastal100',name:'Coastal 100',iso:100,c:['#2bb3c0','#f4fbff'],con:1.05,sat:1.05,temp:-.15,sh:[-.02,.02,.04],hi:[.02,.03,.02],grain:.03},
+ {id:'mint400',name:'Mint 400',iso:400,c:['#8fd3b6','#fff'],sat:.95,tint:.3,fade:.06,sh:[-.02,.04,.02],hi:[.02,.03,0],grain:.06},
+ {id:'rose400',name:'Rose 400',iso:400,c:['#e98aa6','#fff'],sat:.9,temp:.1,fade:.06,sh:[.04,-.01,.03],hi:[.04,.01,.02],grain:.06},
+ {id:'expired98',name:"Expired '98",iso:200,c:['#a35a3a','#e9d2a0'],sat:.75,temp:.35,tint:-.2,fade:.1,sh:[.06,.02,-.04],hi:[.02,.01,-.05],grain:.12,halo:.2},
+ {id:'cine500t',name:'Cine 500T',iso:500,c:['#1b2a3a','#ff7a3d'],con:1.1,sat:.9,temp:-.3,sh:[-.03,.02,.05],hi:[.05,.02,-.03],grain:.06,halo:.5},
+ {id:'sunny400',name:'Sunny 400',iso:400,c:['#ffcc1a','#d9262a'],exp:.1,con:1.05,sat:1.2,temp:.35,grain:.05,halo:.15},
+ {id:'pastel160',name:'Pastel 160',iso:160,c:['#f6c8d8','#c8e2f6'],exp:.08,con:.8,sat:.75,fade:.1,hi:[.02,.02,.03],grain:.03},
+ {id:'cross',name:'Cross Pro',iso:200,c:['#c6e03a','#2a55d9'],con:1.3,sat:1.3,tint:.2,sh:[0,0,.08],hi:[.06,.06,-.08],grain:.05},
+ {id:'lomo100',name:'Lomo 100',iso:100,c:['#d9262a','#111'],con:1.35,sat:1.35,vig:.35,sh:[0,0,.05],hi:[.05,.04,-.03],grain:.05},
+ {id:'noir3200',name:'Noir 3200',iso:3200,c:['#000','#888'],bw:true,exp:-.05,con:1.45,grain:.2},
+ {id:'sepia100',name:'Sepia 100',iso:100,c:['#704214','#f1dcb5'],bw:true,sepia:true,fade:.06,sh:[.07,.02,-.05],hi:[.06,.03,-.04],grain:.05},
+ {id:'silver100',name:'Silver 100',iso:100,c:['#c9ccd1','#333'],bw:true,con:1.05,fade:.02,grain:.04}
+];
+
+/* ================= STATE ================= */
+const LS={get(k,d){try{const v=localStorage.getItem('fc_'+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem('fc_'+k,JSON.stringify(v))}catch(e){}}};
+const S={
+ cam:CAMS.find(c=>c.id===LS.get('cam'))||CAMS[0],
+ lens:LENSES.find(c=>c.id===LS.get('lens'))||LENSES[0],
+ film:FILMS.find(c=>c.id===LS.get('film'))||FILMS[0],
+ facing:LS.get('facing','environment'),
+ stamp:LS.get('stamp',true),sound:LS.get('sound',true),grid:LS.get('grid',false),
+ hq:LS.get('hq',false),autosave:LS.get('autosave',false),roll:LS.get('roll',36),
+ left:LS.get('left',LS.get('roll',36)),frameNo:LS.get('frameNo',1),torch:false
+};
+const $=id=>document.getElementById(id);
+const video=$('video');
+let stream=null,track=null,busy=false;
+
+/* ================= UI ================= */
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800)}
+function dateStr(d=new Date()){const p=n=>String(n).padStart(2,'0');return `${p(d.getMonth()+1)} ${p(d.getDate())} '${String(d.getFullYear()).slice(2)}`}
+function cssFor(f,l){
+ const a=[];a.push(`brightness(${(1+(f.exp||0)*.8-(f.fade||0)*.3).toFixed(2)})`);
+ a.push(`contrast(${((f.con||1)*(1-(f.fade||0)*1.2)).toFixed(2)})`);
+ if(f.bw)a.push('grayscale(1)');else a.push(`saturate(${(f.sat||1).toFixed(2)})`);
+ const t=f.temp||0;if(f.sepia)a.push('sepia(.7)');else if(t>0)a.push(`sepia(${(t*.3).toFixed(2)})`);
+ if(t<0)a.push(`hue-rotate(${(t*10).toFixed(0)}deg) saturate(1.05)`);
+ if(l.soft)a.push(`blur(${(l.soft*1.2).toFixed(1)}px)`);
+ return a.join(' ');
+}
+function applyUI(){
+ $('lblCam').textContent=S.cam.name;$('lblLens').textContent=S.lens.name;$('lblFilm').textContent=S.film.name;
+ video.style.filter=cssFor(S.film,S.lens);
+ video.style.transform=`${S.facing==='user'?'scaleX(-1) ':''}scale(${S.lens.zoom||1})`;
+ const v=Math.min(.8,(S.film.vig||0)+S.lens.vig);
+ $('vig').style.background=`radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,${v}) 100%)`;
+ $('circle').style.display=S.lens.circle?'block':'none';
+ $('grid').style.display=S.grid?'block':'none';
+ $('stamp').style.display=(S.stamp&&S.cam.stamp)?'block':'none';$('stamp').textContent=dateStr();
+ $('counter').textContent=S.roll?String(S.left).padStart(2,'0'):'∞';
+ fitVF();
+}
+function fitVF(){const w0=$('wrap').clientWidth-28,h0=$('wrap').clientHeight-12,A=S.cam.aspect;let w=w0,h=w/A;if(h>h0){h=h0;w=h*A}$('vf').style.width=w+'px';$('vf').style.height=h+'px'}
+addEventListener('resize',fitVF);
+
+/* sheets */
+function openSheet(title,body){$('sheetTitle').textContent=title;const b=$('sheetBody');b.innerHTML='';b.appendChild(body);$('sheet').classList.add('open');$('scrim').classList.add('open')}
+function closeSheet(){$('sheet').classList.remove('open');$('scrim').classList.remove('open')}
+$('scrim').onclick=closeSheet;
+function pick(kind){
+ const list={cam:CAMS,lens:LENSES,film:FILMS}[kind],title={cam:'เลือกกล้อง',lens:'เลือกเลนส์',film:'เลือกฟิล์ม'}[kind];
+ const box=document.createElement('div');box.className='opts';
+ list.forEach(it=>{
+  const o=document.createElement('button');o.className='opt'+(S[kind].id===it.id?' active':'');
+  let icon;
+  if(kind==='film'){const[c1,c2]=it.c;icon=`<div class="can" style="background:linear-gradient(#2a2a2a 0 12%,${c2} 12% 34%,${c1} 34% 66%,${c2} 66% 88%,#2a2a2a 88%)"></div>`}
+  else icon=`<div class="ic">${kind==='lens'?(it.circle?'🐟':'🔘'):it.ic}</div>`;
+  o.innerHTML=`${icon}<b>${it.name}</b><span>${kind==='film'?'ISO '+it.iso+(it.bw?' · ขาวดำ':''):it.sub}</span>`;
+  o.onclick=()=>{S[kind]=it;LS.set(kind,it.id);applyUI();closeSheet();toast(it.name)};
+  box.appendChild(o);
+ });
+ openSheet(title,box);
+}
+document.querySelectorAll('.sel').forEach(b=>b.onclick=()=>pick(b.dataset.kind));
+
+$('btnSettings').onclick=()=>{
+ const box=document.createElement('div');box.className='rows';
+ const tg=(k,label)=>{const r=document.createElement('label');r.className='row';r.innerHTML=`<span>${label}</span><input type="checkbox" ${S[k]?'checked':''}>`;r.querySelector('input').onchange=e=>{S[k]=e.target.checked;LS.set(k,S[k]);applyUI()};box.appendChild(r)};
+ tg('stamp','แสดงวันที่บนรูป');tg('sound','เสียงชัตเตอร์');tg('grid','เส้นตารางช่วยจัดภาพ');tg('hq','ความละเอียดสูง (ช้าลงนิดหน่อย)');tg('autosave','ดาวน์โหลดลงเครื่องทันทีหลังถ่าย');
+ const r=document.createElement('div');r.className='row';r.innerHTML=`<span>ขนาดม้วนฟิล์ม</span><select><option value="24">24 รูป</option><option value="36">36 รูป</option><option value="0">ไม่จำกัด</option></select>`;
+ const s=r.querySelector('select');s.value=String(S.roll);s.onchange=()=>{S.roll=+s.value;S.left=S.roll;LS.set('roll',S.roll);LS.set('left',S.left);applyUI()};box.appendChild(r);
+ const n=document.createElement('div');n.className='note';n.innerHTML='ฟรี ไม่มีโฆษณา รูปทั้งหมดเก็บอยู่ในเครื่องคุณเท่านั้น ไม่อัปโหลดไปไหน<br>แตะตัวเลขมุมซ้ายบนเพื่อเปลี่ยนม้วนใหม่ · ปุ่ม 🖼️ ใช้แต่งรูปเก่าจากแกลเลอรีให้เป็นฟิล์ม';box.appendChild(n);
+ openSheet('ตั้งค่า',box);
+};
+$('counter').onclick=()=>{if(!S.roll)return;S.left=S.roll;LS.set('left',S.left);applyUI();toast('ใส่ฟิล์มม้วนใหม่แล้ว 🎞️')};
+
+/* ================= CAMERA ================= */
+async function startCam(){
+ if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+ $('msg').style.display='grid';$('msg').textContent='กำลังเปิดกล้อง…';
+ try{
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('nomedia');
+  stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:S.facing},width:{ideal:2560},height:{ideal:1920}},audio:false});
+  video.srcObject=stream;await video.play().catch(()=>{});
+  track=stream.getVideoTracks()[0];
+  const caps=track.getCapabilities?track.getCapabilities():{};
+  $('btnTorch').style.display=caps.torch?'grid':'none';S.torch=false;$('btnTorch').classList.remove('on');
+  $('msg').style.display='none';
+ }catch(e){
+  $('msg').innerHTML='เปิดกล้องไม่ได้ 📷<br><small>ต้องเปิดผ่านลิงก์ https (เช่น GitHub Pages) และกดอนุญาตกล้อง<br>หรือกดปุ่มชัตเตอร์/🖼️ เพื่อเลือกรูปจากเครื่องมาแต่งเป็นฟิล์ม</small>';
+ }
+ applyUI();
+}
+$('btnFlip').onclick=()=>{S.facing=S.facing==='user'?'environment':'user';LS.set('facing',S.facing);startCam()};
+$('btnTorch').onclick=()=>{S.torch=!S.torch;$('btnTorch').classList.toggle('on',S.torch);toast(S.torch?'แฟลชเปิด':'แฟลชปิด')};
+document.addEventListener('visibilitychange',()=>{if(document.hidden){if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}}else startCam()});
+
+let actx=null;
+function click(){
+ if(!S.sound)return;
+ try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();const n=actx.sampleRate*.09,b=actx.createBuffer(1,n,actx.sampleRate),d=b.getChannelData(0);
+  for(let i=0;i<n;i++){const t=i/n;d[i]=(Math.random()*2-1)*(t<.15?1:t<.35?.15:t<.5?.8:.05)*(1-t)}
+  const s=actx.createBufferSource();s.buffer=b;const g=actx.createGain();g.gain.value=.5;s.connect(g).connect(actx.destination);s.start()}catch(e){}
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+$('shutter').onclick=async()=>{
+ if(busy)return;
+ if(!stream||!video.videoWidth){$('fileIn').click();return}
+ if(S.roll&&S.left<=0){toast('ฟิล์มหมดม้วน แตะตัวเลขมุมซ้ายบนเพื่อเปลี่ยนม้วน');return}
+ busy=true;
+ try{
+  if(S.torch&&track){try{await track.applyConstraints({advanced:[{torch:true}]});await sleep(350)}catch(e){}}
+  click();
+  const fl=$('flash');fl.style.transition='none';fl.style.opacity=S.torch||S.cam.punch?'.9':'.6';
+  // grab frame immediately
+  const vw=video.videoWidth,vh=video.videoHeight,g=mk(vw,vh),gx=g.getContext('2d');gx.drawImage(video,0,0,vw,vh);
+  if(S.torch&&track){try{await track.applyConstraints({advanced:[{torch:false}]})}catch(e){}}
+  requestAnimationFrame(()=>{fl.style.transition='opacity .35s';fl.style.opacity='0'});
+  $('dev').style.display='grid';await sleep(60);
+  const out=develop(g,vw,vh,S.facing==='user');
+  await saveShot(out);
+  if(S.roll){S.left--;LS.set('left',S.left)}
+  applyUI();
+ }catch(e){console.error(e);toast('ถ่ายไม่สำเร็จ ลองใหม่อีกครั้ง')}
+ $('dev').style.display='none';busy=false;
+};
+
+$('btnImport').onclick=()=>$('fileIn').click();
+$('fileIn').onchange=async e=>{
+ const files=[...e.target.files];e.target.value='';if(!files.length)return;
+ busy=true;$('dev').style.display='grid';
+ for(const f of files){
+  try{
+   const bmp=await loadImg(f);
+   const out=develop(bmp,bmp.width,bmp.height,false,f.lastModified?new Date(f.lastModified):new Date());
+   await saveShot(out);
+  }catch(err){console.error(err);toast('เปิดรูปนี้ไม่ได้')}
+ }
+ $('dev').style.display='none';busy=false;toast(`แต่ง ${files.length} รูปเป็นฟิล์มแล้ว`);
+};
+function loadImg(file){
+ if(window.createImageBitmap)return createImageBitmap(file,{imageOrientation:'from-image'}).catch(()=>viaImg(file));
+ return viaImg(file);
+}
+function viaImg(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file),i=new Image();i.onload=()=>{res(i)};i.onerror=rej;i.src=u})}
+
+/* ================= DEVELOP (FILM ENGINE) ================= */
+function mk(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c}
+function develop(src,sw0,sh0,mirror,when){
+ const cam=S.cam,lens=S.lens,film=S.film,A=cam.aspect,z=lens.zoom||1;
+ let cw=sw0,ch=cw/A;if(ch>sh0){ch=sh0;cw=ch*A}
+ cw/=z;ch/=z;const cx=(sw0-cw)/2,cy=(sh0-ch)/2;
+ const MAX=S.hq?2400:1600;let w,h;
+ if(A>=1){w=Math.min(MAX,Math.round(cw));h=Math.round(w/A)}else{h=Math.min(MAX,Math.round(ch));w=Math.round(h*A)}
+ const c=mk(w,h),x=c.getContext('2d',{willReadFrequently:true});
+ if(mirror){x.translate(w,0);x.scale(-1,1)}
+ x.drawImage(src,cx,cy,cw,ch,0,0,w,h);x.setTransform(1,0,0,1,0,0);
+ let img=x.getImageData(0,0,w,h);
+ if(lens.k)img=distort(img,lens.k,lens.circle);
+ const flashPunch=cam.punch?{exp:.08,con:.1,vig:.15}:null;
+ colorize(img,film,Math.min(.85,(film.vig||0)+lens.vig+(flashPunch?flashPunch.vig:0)),lens.circle,flashPunch);
+ x.putImageData(img,0,0);
+ glow(c,x,lens.soft||0,film.halo||0);
+ if(cam.leak)leak(x,w,h);
+ if(lens.circle){x.globalCompositeOperation='destination-in';x.beginPath();x.arc(w/2,h/2,Math.min(w,h)/2,0,Math.PI*2);x.fill();x.globalCompositeOperation='destination-over';x.fillStyle='#000';x.fillRect(0,0,w,h);x.globalCompositeOperation='source-over'}
+ return finish(c,cam,film,when||new Date());
+}
+function buildLUT(f,punch){
+ const L=[new Uint8ClampedArray(256),new Uint8ClampedArray(256),new Uint8ClampedArray(256)];
+ const exp=Math.pow(2,(f.exp||0)+(punch?punch.exp:0)),con=(f.con||1)+(punch?punch.con:0),fade=f.fade||0,t=f.temp||0,tn=f.tint||0;
+ const sh=f.sh||[0,0,0],hi=f.hi||[0,0,0],mul=f.bw&&!f.sepia?[1,1,1]:[1+t*.12,1+tn*.08,1-t*.12];
+ for(let c=0;c<3;c++)for(let v=0;v<256;v++){
+  let y=v/255*exp;y=Math.min(1,y);
+  y=y<.5?.5*Math.pow(2*y,con):1-.5*Math.pow(2*(1-y),con);
+  y=y*mul[c];
+  y+=sh[c]*(1-y)*(1-y)*1.5+hi[c]*y*y*1.5;
+  y=fade+y*(1-fade*1.5);
+  L[c][v]=Math.round(Math.max(0,Math.min(1,y))*255);
+ }
+ return L;
+}
+function colorize(img,f,vig,circle,punch){
+ const d=img.data,w=img.width,h=img.height,L=buildLUT(f,punch),[R,G,B]=L,sat=f.sat||1,bw=!!f.bw,gr=(f.grain||0)*255;
+ const cx=w/2,cy=h/2,rn=circle?Math.min(w,h)/2:Math.hypot(cx,cy);
+ let seed=(Math.random()*4294967295)>>>0||1;
+ for(let j=0,p=0;j<h;j++){
+  const dy=(j-cy)/rn,dy2=dy*dy;
+  for(let i=0;i<w;i++,p+=4){
+   let r=d[p],g=d[p+1],b=d[p+2];
+   if(bw){const l=(.3*r+.59*g+.11*b)|0;r=R[l];g=G[l];b=B[l]}
+   else{r=R[r];g=G[g];b=B[b];if(sat!==1){const l=.299*r+.587*g+.114*b;r=l+(r-l)*sat;g=l+(g-l)*sat;b=l+(b-l)*sat}}
+   if(vig){const dx=(i-cx)/rn,dd=Math.sqrt(dx*dx+dy2);if(dd>.45){const s=Math.min(1,(dd-.45)/.6);const k=1-vig*s*s*(3-2*s);r*=k;g*=k;b*=k}}
+   if(gr){seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;const n=((seed>>>0)/4294967295-.5)*gr;const l=(r+g+b)/765;const m=n*(1-Math.abs(l-.5)*1.2);r+=m;g+=m;b+=m}
+   d[p]=r;d[p+1]=g;d[p+2]=b;
+  }
+ }
+}
+function distort(img,k,circle){
+ const w=img.width,h=img.height,s=img.data,o=new ImageData(w,h),d=o.data,cx=w/2,cy=h/2,R=circle?Math.min(w,h)/2:Math.hypot(cx,cy),K=1+k;
+ for(let j=0,p=0;j<h;j++)for(let i=0;i<w;i++,p+=4){
+  const nx=(i-cx)/R,ny=(j-cy)/R,r2=nx*nx+ny*ny;
+  if(circle&&r2>1){d[p+3]=255;continue}
+  const f=(1+k*r2)/K;let sx=(cx+nx*f*R)|0,sy=(cy+ny*f*R)|0;
+  sx=sx<0?0:sx>=w?w-1:sx;sy=sy<0?0:sy>=h?h-1:sy;const q=(sy*w+sx)*4;
+  d[p]=s[q];d[p+1]=s[q+1];d[p+2]=s[q+2];d[p+3]=255;
+ }
+ return o;
+}
+function glow(c,x,soft,halo){
+ if(!soft&&!halo)return;const w=c.width,h=c.height,t=mk(w,h),tx=t.getContext('2d');
+ if(!('filter' in tx))return;
+ tx.filter=`blur(${Math.max(2,Math.round(w*.012))}px)`;tx.drawImage(c,0,0);
+ if(soft){x.globalAlpha=soft*.7;x.drawImage(t,0,0)}
+ if(halo){
+  // warm halation from highlights
+  const t2=mk(w,h),t2x=t2.getContext('2d');t2x.filter=`blur(${Math.round(w*.02)}px) brightness(.9) contrast(3)`;t2x.drawImage(c,0,0);
+  t2x.filter='none';t2x.globalCompositeOperation='multiply';t2x.fillStyle='#ff6a3a';t2x.fillRect(0,0,w,h);
+  x.globalCompositeOperation='screen';x.globalAlpha=halo*.45;x.drawImage(t2,0,0);
+ }
+ x.globalAlpha=1;x.globalCompositeOperation='source-over';
+}
+function leak(x,w,h){
+ x.globalCompositeOperation='screen';
+ const side=Math.random()<.5?0:w,y=h*(.15+Math.random()*.7),r=Math.max(w,h)*(.5+Math.random()*.3);
+ const g=x.createRadialGradient(side,y,0,side,y,r);
+ g.addColorStop(0,'rgba(255,80,20,.8)');g.addColorStop(.35,'rgba(255,140,40,.35)');g.addColorStop(1,'rgba(255,160,60,0)');
+ x.fillStyle=g;x.fillRect(0,0,w,h);
+ if(Math.random()<.5){const g2=x.createLinearGradient(0,0,0,h*.4);g2.addColorStop(0,'rgba(255,60,90,.3)');g2.addColorStop(1,'rgba(255,60,90,0)');x.fillStyle=g2;x.fillRect(0,0,w,h)}
+ x.globalCompositeOperation='source-over';
+}
+function drawStamp(o,X,Y,W,H,when){
+ const fs=Math.round(Math.max(W,H)*.032);o.save();
+ o.font=`600 ${fs}px ui-monospace,Menlo,Consolas,monospace`;o.textAlign='right';o.textBaseline='bottom';
+ o.fillStyle='#ff7b1c';o.shadowColor='rgba(255,90,0,.9)';o.shadowBlur=fs*.5;o.globalAlpha=.9;
+ const txt=dateStr(when).split('').join(String.fromCharCode(8202));
+ o.fillText(txt,X+W-W*.06,Y+H-H*.045);o.restore();
+}
+function finish(c,cam,film,when){
+ const w=c.width,h=c.height;let out=c,ox=0,oy=0,o=c.getContext('2d');
+ if(cam.frame==='instant'){
+  const b=Math.round(w*.055),bb=Math.round(w*.24);out=mk(w+2*b,h+b+bb);o=out.getContext('2d');
+  o.fillStyle='#f3efe6';o.fillRect(0,0,out.width,out.height);o.drawImage(c,b,b);ox=b;oy=b;
+  o.fillStyle='rgba(0,0,0,.06)';o.fillRect(b,b,w,2);
+ }else if(cam.frame==='strip'){
+  const b=Math.round(Math.max(w,h)*.05);out=mk(w+2*b,h+2*b);o=out.getContext('2d');
+  o.fillStyle='#0d0b0a';o.fillRect(0,0,out.width,out.height);o.drawImage(c,b,b);ox=b;oy=b;
+  const fs=Math.round(b*.42);o.font=`700 ${fs}px ui-monospace,Menlo,monospace`;o.fillStyle='#f29a3a';o.textBaseline='middle';
+  o.textAlign='left';o.fillText(`FILMCAM ${film.iso}`,b,b/2);
+  o.textAlign='right';o.fillText(`▸ ${S.frameNo}A`,b+w,b+h+b/2);
+  o.textAlign='left';o.fillText(`${S.frameNo}`,b,b+h+b/2);
+  S.frameNo=S.frameNo%36+1;LS.set('frameNo',S.frameNo);
+ }
+ if(S.stamp&&cam.stamp)drawStamp(o,ox,oy,w,h,when);
+ return out;
+}
+
+/* ================= STORAGE ================= */
+const DB=new Promise((res,rej)=>{try{const r=indexedDB.open('filmcam',1);r.onupgradeneeded=()=>r.result.createObjectStore('photos',{keyPath:'id',autoIncrement:true});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}catch(e){rej(e)}});
+async function store(mode,fn){const db=await DB;return new Promise((res,rej)=>{const t=db.transaction('photos',mode),r=fn(t.objectStore('photos'));t.oncomplete=()=>res(r&&r.result);t.onerror=()=>rej(t.error)})}
+const toBlob=c=>new Promise(r=>c.toBlob(r,'image/jpeg',.92));
+async function saveShot(canvas){
+ const blob=await toBlob(canvas);const rec={blob,ts:Date.now(),film:S.film.name,cam:S.cam.name,lens:S.lens.name};
+ try{rec.id=await store('readwrite',s=>s.add(rec))}catch(e){toast('เก็บในอัลบั้มไม่ได้ — ดาวน์โหลดให้แทน');download(rec);return}
+ setThumb(blob);if(S.autosave)download(rec);
+}
+let thumbURL=null;
+function setThumb(blob){if(thumbURL)URL.revokeObjectURL(thumbURL);thumbURL=blob?URL.createObjectURL(blob):null;$('thumb').style.backgroundImage=thumbURL?`url(${thumbURL})`:'none'}
+async function loadThumb(){try{const all=await store('readonly',s=>s.getAll());setThumb(all.length?all[all.length-1].blob:null)}catch(e){}}
+function fname(r){const d=new Date(r.ts),p=n=>String(n).padStart(2,'0');return `FilmCam_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.jpg`}
+function download(r){const u=URL.createObjectURL(r.blob),a=document.createElement('a');a.href=u;a.download=fname(r);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
+
+/* ================= GALLERY ================= */
+let gURLs=[],cur=null;
+async function openGallery(){
+ $('gallery').classList.add('open');const grid=$('ggrid');grid.innerHTML='';gURLs.forEach(u=>URL.revokeObjectURL(u));gURLs=[];
+ let all=[];try{all=await store('readonly',s=>s.getAll())}catch(e){}
+ all.reverse();$('gCount').textContent=all.length?all.length+' รูป':'';
+ if(!all.length){grid.innerHTML='<div class="empty">ยังไม่มีรูปเลย<br>ไปถ่ายรูปแรกกันเถอะ 🎞️</div>';return}
+ all.forEach(r=>{const u=URL.createObjectURL(r.blob);gURLs.push(u);const i=document.createElement('img');i.src=u;i.loading='lazy';i.onclick=()=>openViewer(r,u);grid.appendChild(i)});
+}
+function openViewer(r,u){cur=r;$('vImg').src=u;$('vTitle').textContent=r.film;const d=new Date(r.ts);$('vMeta').textContent=`${r.cam} · ${r.lens} · ${d.toLocaleString('th-TH')}`;$('viewerWrap').classList.add('open')}
+$('thumb').onclick=openGallery;
+$('gClose').onclick=()=>$('gallery').classList.remove('open');
+$('vClose').onclick=()=>$('viewerWrap').classList.remove('open');
+$('vSave').onclick=()=>{if(cur){download(cur);toast('กำลังดาวน์โหลด…')}};
+$('vShare').onclick=async()=>{
+ if(!cur)return;const file=new File([cur.blob],fname(cur),{type:'image/jpeg'});
+ if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:'FilmCam'})}catch(e){}}
+ else{download(cur);toast('เครื่องนี้แชร์ตรงไม่ได้ เลยดาวน์โหลดให้แทน')}
+};
+let delArm=0;
+$('vDel').onclick=async()=>{
+ if(!cur)return;if(Date.now()-delArm>2500){delArm=Date.now();$('vDel').textContent='แตะอีกครั้งเพื่อลบ';setTimeout(()=>$('vDel').textContent='🗑️ ลบ',2500);return}
+ delArm=0;$('vDel').textContent='🗑️ ลบ';try{await store('readwrite',s=>s.delete(cur.id))}catch(e){}
+ $('viewerWrap').classList.remove('open');openGallery();loadThumb();toast('ลบแล้ว');
+};
+
+/* ================= INIT ================= */
+applyUI();startCam();loadThumb();
+setInterval(()=>{$('stamp').textContent=dateStr()},60000);
+if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+// ขอให้เบราว์เซอร์ไม่ลบรูปในอัลบั้มเองตอนพื้นที่เครื่องใกล้เต็ม
+if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+</script>
+</body>
+</html>
