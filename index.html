@@ -95,7 +95,7 @@ button{font:inherit;cursor:pointer}
 .empty{grid-column:1/-1;text-align:center;color:var(--mute);padding:60px 20px;font-size:14px}
 .selbar{display:none;gap:10px;padding:10px 14px calc(env(safe-area-inset-bottom) + 14px);flex:none}
 .selbar.show{display:flex}
-.selbar button{flex:1;padding:13px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+.selbar button{flex:1;padding:13px 6px;font-size:14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
 .selbar .pri{background:var(--amber);color:#1a1714;border-color:var(--amber);font-weight:700}
 .viewer{flex:1;display:flex;align-items:center;justify-content:center;padding:10px;min-height:0}
 #vStage{touch-action:pan-y;overflow:hidden;position:relative}
@@ -207,11 +207,11 @@ button{font:inherit;cursor:pointer}
 
 <!-- Gallery -->
 <div class="full" id="gallery">
-  <div class="fhead"><button class="iconbtn" id="gClose">←</button><h2>อัลบั้มฟิล์ม <span id="gCount" style="color:var(--mute);font-size:13px;font-weight:400"></span></h2><button class="txtbtn" id="gSelect">รวมรูป</button></div>
+  <div class="fhead"><button class="iconbtn" id="gClose">←</button><h2>อัลบั้มฟิล์ม <span id="gCount" style="color:var(--mute);font-size:13px;font-weight:400"></span></h2><button class="txtbtn" id="gSelect">เลือก</button></div>
   <div class="albrow" id="albRow"></div>
   <div class="albnote" id="albNote"></div>
   <div class="ggrid" id="ggrid"></div>
-  <div class="selbar" id="selbar"><button id="selCancel">ยกเลิก</button><button class="pri" id="selGo">รวมรูป (0)</button></div>
+  <div class="selbar" id="selbar"><button id="selAll">เลือกทั้งหมด</button><button id="selGo">รวมรูป</button><button class="pri" id="selDel">🗑️ ลบ (0)</button></div>
 </div>
 
 <!-- Viewer -->

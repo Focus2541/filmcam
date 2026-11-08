@@ -889,19 +889,36 @@ async function openGallery(){
  all.forEach(r=>{
   if(!isReady(r)){const t=el(`<div class="tile locked"><div><b>🎞️</b>กำลังล้าง<br>${lockText(r)}</div></div>`);t.onclick=()=>toast(`ยังล้างไม่เสร็จ (${lockText(r)})`);grid.appendChild(t);return}
   const u=URL.createObjectURL(r.blob);gURLs.push(u);const isV=r.kind==='video';
-  const t=el(`<div class="tile">${isV?'<video muted playsinline preload="metadata"></video><div class="play">▶ วิดีโอ</div>':'<img loading="lazy" alt="">'}${r.kind==='gif'?'<div class="play">GIF</div>':''}<div class="badge" style="display:${selMode&&!isV?'grid':'none'}"></div></div>`);
+  const t=el(`<div class="tile">${isV?'<video muted playsinline preload="metadata"></video><div class="play">▶ วิดีโอ</div>':'<img loading="lazy" alt="" draggable="false">'}${r.kind==='gif'?'<div class="play">GIF</div>':''}<div class="badge" style="display:${selMode?'grid':'none'}"></div></div>`);t.dataset.id=r.id;
   if(isV)t.querySelector('video').src=u+'#t=0.1';else t.querySelector('img').src=u;
   const idx=picked.findIndex(p=>p.id===r.id);if(idx>=0){t.classList.add('picked');t.querySelector('.badge').textContent=idx+1}
-  t.onclick=()=>{if(selMode){if(!isV)togglePick(r)}else openViewer(r)};
+  let lp=0,lpFired=false;
+  t.addEventListener('pointerdown',()=>{lpFired=false;clearTimeout(lp);lp=setTimeout(()=>{lpFired=true;if(navigator.vibrate)navigator.vibrate(20);if(!selMode)setSel(true,r);else togglePick(r)},450)});
+  ['pointerup','pointercancel','pointerleave'].forEach(ev=>t.addEventListener(ev,()=>clearTimeout(lp)));
+  t.addEventListener('contextmenu',e=>e.preventDefault());
+  t.onclick=()=>{if(lpFired){lpFired=false;return}if(selMode)togglePick(r);else openViewer(r)};
   grid.appendChild(t);
  });
  const lb=LS.get('lastBackup',0);if(all.length>=20&&Date.now()-lb>14*864e5&&!openGallery._warned){openGallery._warned=1;toast('อย่าลืมสำรองรูป ⚙️ ตั้งค่า → สำรองรูปทั้งหมด',3500)}
 }
-function togglePick(r){const i=picked.findIndex(p=>p.id===r.id);if(i>=0)picked.splice(i,1);else{if(picked.length>=9){toast('เลือกได้สูงสุด 9 รูป');return}picked.push(r)}$('selGo').textContent=`รวมรูป (${picked.length})`;openGallery()}
-function setSel(on){selMode=on;picked=[];$('gSelect').classList.toggle('on',on);$('gSelect').textContent=on?'กำลังเลือก':'รวมรูป';$('selbar').classList.toggle('show',on);$('selGo').textContent='รวมรูป (0)';openGallery()}
+function paintPicks(){
+ document.querySelectorAll('#ggrid .tile[data-id]').forEach(t=>{const i=picked.findIndex(p=>String(p.id)===t.dataset.id),b=t.querySelector('.badge');t.classList.toggle('picked',i>=0);if(b){b.style.display=selMode?'grid':'none';b.textContent=i>=0?i+1:''}});
+ const n=picked.length;$('gCount').textContent=selMode?`· เลือก ${n}`:$('gCount').textContent;
+ $('selDel').textContent=`🗑️ ลบ (${n})`;$('selGo').textContent='รวมรูป';$('selAll').textContent=n&&n===VIEW.list.length?'ไม่เลือก':'เลือกทั้งหมด';
+}
+function togglePick(r){const i=picked.findIndex(p=>p.id===r.id);if(i>=0)picked.splice(i,1);else picked.push(r);paintPicks()}
+async function setSel(on,first){selMode=on;picked=first?[first]:[];$('gSelect').classList.toggle('on',on);$('gSelect').textContent=on?'ยกเลิก':'เลือก';$('selbar').classList.toggle('show',on);await openGallery();paintPicks()}
 $('gSelect').onclick=()=>setSel(!selMode);
-$('selCancel').onclick=()=>setSel(false);
-$('selGo').onclick=()=>{if(picked.length<2){toast('เลือกอย่างน้อย 2 รูป');return}openCollage(picked.slice())};
+$('selAll').onclick=()=>{picked=picked.length===VIEW.list.length?[]:VIEW.list.slice();paintPicks()};
+$('selGo').onclick=()=>{const ph=picked.filter(r=>r.kind!=='video');if(ph.length<2||ph.length>9){toast('รวมรูปได้ทีละ 2–9 รูป (ไม่รวมวิดีโอ)');return}openCollage(ph)};
+$('selDel').onclick=()=>{
+ const n=picked.length;if(!n){toast('ยังไม่ได้เลือกรูป');return}
+ const box=el('<div class="rows" style="padding-top:0"></div>');
+ box.appendChild(el(`<div class="note" style="padding-top:0">ลบ ${n} รายการออกจากแอป ลบแล้วกู้คืนไม่ได้ (ยกเว้นมีไฟล์สำรองไว้)</div>`));
+ box.appendChild(btn(`🗑️ ลบ ${n} รายการ`,'',async()=>{const ids=picked.map(r=>r.id);await store('readwrite',s=>{ids.forEach(id=>s.delete(id))});closeSheet();await setSel(false);loadThumb();toast(`ลบแล้ว ${n} รายการ`)}));
+ box.appendChild(btn('ยกเลิก','sec',closeSheet));
+ openSheet('ยืนยันการลบ',box);
+};
 $('thumb').onclick=()=>{setSel(false)};
 $('gClose').onclick=()=>{$('gallery').classList.remove('open');selMode=false;gURLs.forEach(u=>URL.revokeObjectURL(u));gURLs=[]};
 
