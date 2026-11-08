@@ -45,6 +45,7 @@ const FILMS=[
  {id:'sepia100',name:'Sepia 100',iso:100,c:['#704214','#f1dcb5'],bw:true,sepia:true,fade:.06,sh:[.07,.02,-.05],hi:[.06,.03,-.04],grain:.05},
  {id:'silver100',name:'Silver 100',iso:100,c:['#c9ccd1','#333'],bw:true,con:1.05,fade:.02,grain:.04},
  {id:'ccd2005',name:'CCD 2005',iso:100,c:['#8a8f99','#29a3ff'],exp:.12,con:1.12,sat:1.25,temp:-.25,tint:-.05,sh:[0,0,.03],hi:[0,.02,.04],grain:.035,halo:.2},
+ {id:'sunsetglow200',name:'Sunset Glow 200',iso:200,feat:1,c:['#f0a868','#fbe3d2'],exp:.12,con:.82,sat:.9,temp:.3,tint:-.08,fade:.06,sh:[.03,.01,.01],hi:[.03,.02,0],grain:.03,halo:.35,bloom:.3,vig:.12},
  {id:'wanderchrome100',name:'Wander Chrome 100',iso:100,feat:1,c:['#6f8a8f','#e6e2d6'],exp:-.02,gam:1.05,con:1.05,sat:.62,temp:-.16,fade:.05,sh:[-.03,.02,.04],hi:[.03,.015,-.02],grain:.04,vig:.15},
  {id:'wanderneg200',name:'Wander Neg 200',iso:200,feat:1,c:['#b5482e','#d9cfc0'],gam:1.08,con:1.15,sat:.85,temp:.1,tint:-.05,fade:.07,sh:[-.02,.03,.04],hi:[.05,.02,-.04],grain:.05,halo:.1,vig:.15},
  {id:'warmmuted200',name:'Warm Muted 200',iso:200,feat:1,c:['#8a6a4f','#e8dccb'],exp:-.05,gam:1.15,dim:.08,con:.92,sat:.65,temp:.28,tint:-.03,fade:.05,sh:[.03,.015,-.01],hi:[.03,.015,-.03],grain:.04,halo:.15,vig:.2},
@@ -248,7 +249,7 @@ function develop(src,sw0,sh0,o){
  const I=o.I==null?1:o.I;
  colorize(img,film,{punch:cam.punch,ev:o.ev||0,I,grain:(film.grain||0)*(o.grain==null?1:o.grain),vig:Math.min(.85,((film.vig||0)+lens.vig+(cam.punch?.15:0))*(.4+.6*I)),circle:lens.circle,seed:o.seed});
  x.putImageData(img,0,0);
- glow(c,x,lens.soft||0,(film.halo||0)*I);
+ glow(c,x,Math.min(.8,(lens.soft||0)+(film.bloom||0)*I),(film.halo||0)*I);
  if(o.leak)leak(x,w,h,R);
  if(o.dust)dust(x,w,h,R);
  if(lens.circle){x.globalCompositeOperation='destination-in';x.fillStyle='#000';x.globalAlpha=1;x.beginPath();x.arc(w/2,h/2,Math.min(w,h)/2,0,Math.PI*2);x.fill();x.globalCompositeOperation='destination-over';x.fillStyle='#000';x.fillRect(0,0,w,h);x.globalCompositeOperation='source-over'}
@@ -432,7 +433,7 @@ function sceneChoice(){
  r/=n;g/=n;b/=n;sat/=n;const l=.299*r+.587*g+.114*b,warm=r-b,green=g-(r+b)/2,blue=b-r,h=new Date().getHours();
  if(l<45)return{film:'cine500t',night:true,why:'🌙 มืด ถ่ายแบบกลางคืนให้'};
  if(warm>28&&l<140)return{film:'warmmuted200',why:'💡 ไฟในห้อง'};
- if(h>=16&&h<19&&warm>8&&l>=90)return{film:'golden200',why:'🌇 แดดเย็น'};
+ if(h>=16&&h<19&&warm>8&&l>=90)return{film:'sunsetglow200',why:'🌇 แดดเย็น'};
  if(blue>12&&l>110)return{film:'coastal100',why:'🌊 ฟ้า/ทะเล'};
  if(green>12)return{film:'mint400',why:'🌿 ต้นไม้'};
  if(l>150&&sat>.35)return{film:'sunny400',why:'☀️ แดดจ้า'};
