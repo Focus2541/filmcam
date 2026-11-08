@@ -45,7 +45,9 @@ const FILMS=[
  {id:'sepia100',name:'Sepia 100',iso:100,c:['#704214','#f1dcb5'],bw:true,sepia:true,fade:.06,sh:[.07,.02,-.05],hi:[.06,.03,-.04],grain:.05},
  {id:'silver100',name:'Silver 100',iso:100,c:['#c9ccd1','#333'],bw:true,con:1.05,fade:.02,grain:.04},
  {id:'ccd2005',name:'CCD 2005',iso:100,c:['#8a8f99','#29a3ff'],exp:.12,con:1.12,sat:1.25,temp:-.25,tint:-.05,sh:[0,0,.03],hi:[0,.02,.04],grain:.035,halo:.2},
- {id:'warmmuted200',name:'Warm Muted 200',iso:200,c:['#8a6a4f','#e8dccb'],exp:-.05,gam:1.15,dim:.08,con:.92,sat:.65,temp:.28,tint:-.03,fade:.05,sh:[.03,.015,-.01],hi:[.03,.015,-.03],grain:.04,halo:.15,vig:.2},
+ {id:'wanderchrome100',name:'Wander Chrome 100',iso:100,feat:1,c:['#6f8a8f','#e6e2d6'],exp:-.02,gam:1.05,con:1.05,sat:.62,temp:-.16,fade:.05,sh:[-.03,.02,.04],hi:[.03,.015,-.02],grain:.04,vig:.15},
+ {id:'wanderneg200',name:'Wander Neg 200',iso:200,feat:1,c:['#b5482e','#d9cfc0'],gam:1.08,con:1.15,sat:.85,temp:.1,tint:-.05,fade:.07,sh:[-.02,.03,.04],hi:[.05,.02,-.04],grain:.05,halo:.1,vig:.15},
+ {id:'warmmuted200',name:'Warm Muted 200',iso:200,feat:1,c:['#8a6a4f','#e8dccb'],exp:-.05,gam:1.15,dim:.08,con:.92,sat:.65,temp:.28,tint:-.03,fade:.05,sh:[.03,.015,-.01],hi:[.03,.015,-.03],grain:.04,halo:.15,vig:.2},
  {id:'moody400',name:'Moody 400',iso:400,dark:1,c:['#2b2f36','#9aa3ad'],exp:-.1,gam:1.35,dim:.15,con:1.1,sat:.68,temp:-.2,fade:.03,sh:[-.01,.01,.04],hi:[.01,.01,0],grain:.06,vig:.25},
  {id:'darkteal',name:'Dark Teal',iso:400,dark:1,c:['#0f3d3e','#e08a4a'],exp:-.1,gam:1.3,dim:.1,con:1.2,sat:.8,temp:-.3,sh:[-.05,.03,.07],hi:[.04,.02,-.03],grain:.05,vig:.3},
  {id:'bleach',name:'Bleach Bypass',iso:200,dark:1,c:['#6e6e6e','#d8d8d8'],exp:-.05,gam:1.25,dim:.05,con:1.5,sat:.4,temp:-.05,grain:.06,vig:.2},
@@ -492,19 +494,17 @@ function pick(kind){
  const mkOpt=it=>{
   const o=el(`<button class="opt${S[kind].id===it.id?' active':''}"></button>`);
   const icon=kind==='film'?canSVG(it):`<div class="ic">${kind==='lens'?(it.circle?'🐟':'🔘'):it.ic}</div>`;
-  o.innerHTML=`${icon}<b>${esc(it.name)}</b><span>${kind==='film'?(it.mine?'ฟิล์มของฉัน':'ISO '+it.iso+(it.dark?' · โทนมืด':'')+(it.bw?' · ขาวดำ':'')):it.sub}</span>`;
+  o.innerHTML=`${icon}<b>${esc(it.name)}</b><span>${kind==='film'?(it.mine?'ฟิล์มของฉัน':it.feat?'✨ ไฮไลท์':'ISO '+it.iso+(it.dark?' · โทนมืด':'')+(it.bw?' · ขาวดำ':'')):it.sub}</span>`;
   o.onclick=()=>{S[kind]=it;LS.set(kind,it.id);if(kind==='film')markUse(it.id);applyUI();closeSheet();toast(it.name)};
   if(it.mine){const m=el('<span class="more" title="แก้ไข/แชร์/ลบ">✏️</span>');m.onclick=e=>{e.stopPropagation();manageMyFilm(it)};o.appendChild(m)}
   return o;
  };
  if(kind==='film'){
-  const fav=sortByUse(list).filter(f=>USE[f.id]>0).slice(0,6);
-  if(fav.length){
-   const wrap=el('<div></div>');wrap.appendChild(el('<div class="lbl" style="padding:0 18px">⭐ ใช้บ่อย</div>'));
-   const fb=el('<div class="opts" style="padding-bottom:6px"></div>');fav.forEach(it=>fb.appendChild(mkOpt(it)));wrap.appendChild(fb);
-   wrap.appendChild(el('<div class="lbl" style="padding:0 18px">ฟิล์มทั้งหมด</div>'));wrap.appendChild(box);
-   list.forEach(it=>box.appendChild(mkOpt(it)));openSheet(title,wrap);return;
-  }
+  const wrap=el('<div></div>'),sec=(t,items)=>{if(!items.length)return;wrap.appendChild(el(`<div class="lbl" style="padding:0 18px">${t}</div>`));const fb=el('<div class="opts" style="padding-bottom:6px"></div>');items.forEach(it=>fb.appendChild(mkOpt(it)));wrap.appendChild(fb)};
+  sec('✨ ไฮไลท์',list.filter(f=>f.feat));
+  sec('⭐ ใช้บ่อย',sortByUse(list).filter(f=>USE[f.id]>0&&!f.feat).slice(0,6));
+  wrap.appendChild(el('<div class="lbl" style="padding:0 18px">ฟิล์มทั้งหมด</div>'));wrap.appendChild(box);
+  list.forEach(it=>box.appendChild(mkOpt(it)));openSheet(title,wrap);return;
  }
  list.forEach(it=>box.appendChild(mkOpt(it)));
  openSheet(title,box);
@@ -958,7 +958,7 @@ function renderEd(){
 function setTab(t){E.tab=t;document.querySelectorAll('#eTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
  const P=$('ePanel');P.innerHTML='';
  if(t==='film'||t==='cam'||t==='lens'){
-  let list={film:FILMS,cam:CAMS,lens:LENSES}[t].filter(x=>!x.hidden||x.id===E.o[t]),box=el('<div class="chips"></div>');if(t==='film')list=sortByUse(list);
+  let list={film:FILMS,cam:CAMS,lens:LENSES}[t].filter(x=>!x.hidden||x.id===E.o[t]),box=el('<div class="chips"></div>');if(t==='film'){list=sortByUse(list);list=[...list.filter(f=>f.feat),...list.filter(f=>!f.feat)]}
   if(t==='film'){const add=el('<button class="chip"><span class="ic">🎯</span>ก๊อปโทน</button>');add.onclick=async()=>{const f=await createToneFilm(E.bmp);if(f){E.o.film=f.id;E.o.filmObj=f;setTab('film');renderEd()}};box.appendChild(add)}
   list.forEach(it=>{const b=el(`<button class="chip${E.o[t]===it.id?' active':''}"></button>`);
    b.innerHTML=(t==='film'?canSVG(it):`<span class="ic">${t==='lens'?(it.circle?'🐟':'🔘'):(it.ic||'📷')}</span>`)+esc(it.name);
