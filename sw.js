@@ -1,5 +1,5 @@
 // เปลี่ยนเลขเวอร์ชันทุกครั้งที่แก้ไฟล์ เพื่อให้มือถือโหลดของใหม่
-const CACHE = 'filmcam-v6';
+const CACHE = 'filmcam-v7';
 const FILES = ['./', './index.html', './app.js', './gifenc.js', './qrcode.js', './manifest.json', './icon-192.png', './icon-512.png', './icon-maskable.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

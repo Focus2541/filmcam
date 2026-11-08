@@ -12,7 +12,8 @@ const CAMS=[
  {id:'_booth',name:'Photo Booth',aspect:4/3,hidden:true},
  {id:'_digi',name:'Digicam 2005',aspect:3/4,stamp:true,stampStyle:'digi',punch:true,hidden:true},
  {id:'_gif',name:'GIF 1:1',aspect:1,hidden:true},
- {id:'_video',name:'Video 9:16',aspect:9/16,hidden:true}
+ {id:'_video',name:'Video 9:16',aspect:9/16,hidden:true},
+ {id:'_dual',name:'หน้า+หลัง 3:4',aspect:3/4,hidden:true}
 ];
 const LENSES=[
  {id:'35',name:'35mm f2',sub:'มาตรฐาน',vig:.22},
@@ -55,6 +56,7 @@ const FILMS=[
 const MODES=[
  {id:'film',name:'ฟิล์ม',hint:'แตะจอโฟกัส · ลากขึ้น/ลงปรับแสง · แตะสองครั้งรีเซ็ต'},
  {id:'booth',name:'บูธ 4 ช่อง',hint:'กดครั้งเดียว ถ่ายต่อกัน 4 รูป ได้แถบรูปแบบตู้ถ่ายรูป'},
+ {id:'dual',name:'หน้า+หลัง',hint:'ถ่ายวิวก่อน แล้วสลับไปถ่ายหน้าเราอัตโนมัติ รวมเป็นรูปเดียว'},
  {id:'digi',name:'ดิจิ 2000',hint:'กล้องดิจิทัลยุค 2000 · แฟลชจัด สีสด วันที่แบบกล้องเก่า'},
  {id:'video',name:'วิดีโอ',hint:'กดเพื่อเริ่ม/หยุดอัด · สูงสุด 30 วินาที'},
  {id:'gif',name:'GIF',hint:'ถ่ายรัว 1 วินาที ได้ภาพขยับวนไปมา'},
@@ -72,7 +74,7 @@ const S={
  cam:byId(CAMS,LS.get('cam')),lens:byId(LENSES,LS.get('lens')),film:byId(FILMS,LS.get('film')),
  mode:LS.get('mode','film'),facing:LS.get('facing','environment'),
  stamp:LS.get('stamp',true),sound:LS.get('sound',true),grid:LS.get('grid',false),hq:LS.get('hq',false),
- autosave:LS.get('autosave',false),dust:LS.get('dust',false),
+ autosave:LS.get('autosave',false),dust:LS.get('dust',false),reveal:LS.get('reveal',true),
  roll:LS.get('roll',36),left:LS.get('left',LS.get('roll',36)),rollId:LS.get('rollId',1),frameNo:LS.get('frameNo',1),
  devMode:LS.get('devMode','instant'),dateMode:LS.get('dateMode','today'),customDate:LS.get('customDate','1998-06-15'),
  albums:LS.get('albums',[]),album:LS.get('album',''),
@@ -82,7 +84,7 @@ if(S.cam.hidden)S.cam=CAMS[0];
 const $=id=>document.getElementById(id);
 const video=$('video');
 let stream=null,track=null,busy=false;
-const effCam=()=>({booth:byId(CAMS,'_booth'),digi:byId(CAMS,'_digi'),gif:byId(CAMS,'_gif'),video:byId(CAMS,'_video')})[S.mode]||S.cam;
+const effCam=()=>({dual:byId(CAMS,'_dual'),booth:byId(CAMS,'_booth'),digi:byId(CAMS,'_digi'),gif:byId(CAMS,'_gif'),video:byId(CAMS,'_video')})[S.mode]||S.cam;
 const effLens=()=>S.mode==='digi'?byId(LENSES,'_digi'):S.lens;
 const USE=LS.get('filmUse',{});
 function markUse(id){if(!id)return;USE[id]=(USE[id]||0)+1;LS.set('filmUse',USE)}
@@ -496,6 +498,7 @@ $('btnSettings').onclick=()=>{
  selectRow(box,'วันที่ที่ใช้',[['today','วันนี้'],['custom','กำหนดเอง']],()=>S.dateMode,v=>{S.dateMode=v;LS.set('dateMode',v);dateIn.style.display=v==='custom'?'flex':'none';applyUI()});
  const dateIn=el(`<div class="row"><span>เลือกวันที่</span><input type="date"></div>`);const di=dateIn.querySelector('input');di.value=S.customDate;di.onchange=()=>{if(di.value){S.customDate=di.value;LS.set('customDate',di.value);applyUI()}};box.appendChild(dateIn);dateIn.style.display=S.dateMode==='custom'?'flex':'none';
  b('dust','ฝุ่นและรอยขีดข่วนแบบฟิล์มเก่า');
+ b('reveal','โพลารอยด์ค่อยๆ ขึ้นภาพ (กล้อง Instant)');
  selectRow(box,'การล้างฟิล์ม',[['instant','เห็นรูปทันที'],['hour','รอ 1 ชั่วโมง'],['roll','รอให้หมดม้วน']],()=>S.devMode,v=>{S.devMode=v;LS.set('devMode',v);if(v==='roll'&&!S.roll)toast('โหมดนี้ต้องกดเปลี่ยนม้วนเองเพื่อล้าง')});
  selectRow(box,'ขนาดม้วนฟิล์ม',[['24','24 รูป'],['36','36 รูป'],['0','ไม่จำกัด']],()=>S.roll,v=>{S.roll=+v;S.left=S.roll;LS.set('roll',S.roll);LS.set('left',S.left);applyUI()});
  b('sound','เสียงชัตเตอร์');b('grid','เส้นตารางช่วยจัดภาพ');b('hq','ความละเอียดสูง (ช้าลงนิดหน่อย)');b('autosave','ดาวน์โหลดลงเครื่องทันทีหลังล้างเสร็จ');
@@ -598,6 +601,7 @@ $('shutter').onclick=async()=>{
  busy=true;
  try{
   if(S.mode==='booth')await shootBooth();
+  else if(S.mode==='dual')await shootDual();
   else if(S.mode==='gif')await shootGif();
   else await shootStill();
  }catch(e){console.error(e);toast('ถ่ายไม่สำเร็จ ลองใหม่อีกครั้ง')}
@@ -620,7 +624,8 @@ async function shootStill(){
  $('dev').style.display='grid';await sleep(50);
  const o=defaultOpts();if(night)o.ev+=.35;
  if(byId(CAMS,o.cam).frame==='strip'){S.frameNo=S.frameNo%36+1;LS.set('frameNo',S.frameNo)}
- await saveShot(g,o,g.width,g.height);useRoll();
+ const rec=await saveShot(g,o,g.width,g.height);useRoll();
+ if(rec&&!rec.lock&&S.reveal&&byId(CAMS,o.cam).frame==='instant')polaroidReveal(rec.blob);
 }
 async function nightStack(N){
  let acc=null,w,h;
@@ -742,7 +747,7 @@ async function saveShot(raw,o,w,h,imported){
  try{rec.id=await store('readwrite',s=>s.add(rec))}catch(e){toast('เก็บในอัลบั้มไม่ได้ — ดาวน์โหลดให้แทน');download(rec);return}
  if(rec.lock)toast(S.devMode==='hour'?'ส่งล้างแล้ว ⏳ รอ 1 ชั่วโมง':'ส่งล้างแล้ว ⏳ รอหมดม้วน');
  else if(S.autosave)download(rec);
- loadThumb();
+ loadThumb();return rec;
 }
 async function addRecord(rec){rec.ts=rec.ts||Date.now();if(rec.album==null)rec.album=S.album;rec.id=await store('readwrite',s=>s.add(rec));loadThumb();return rec}
 let thumbURL=null;
@@ -752,7 +757,7 @@ async function loadThumb(){
  if(last&&!isReady(last)){t.style.backgroundImage='none';t.textContent='⏳';return}
  t.textContent='';if(ready){thumbURL=URL.createObjectURL(ready.blob);t.style.backgroundImage=`url(${thumbURL})`}else{t.style.backgroundImage='none';if(last&&last.kind==='video')t.textContent='🎬'}
 }
-function extOf(b){const t=(b&&b.type)||'';return t.includes('gif')?'gif':t.includes('mp4')?'mp4':t.includes('webm')?'webm':t.includes('zip')?'zip':'jpg'}
+function extOf(b){const t=(b&&b.type)||'';return t.includes('gif')?'gif':t.includes('png')?'png':t.includes('mp4')?'mp4':t.includes('webm')?'webm':t.includes('zip')?'zip':'jpg'}
 function fname(r){const d=new Date(r.ts||Date.now());return `FilmCam_${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}_${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}.${extOf(r.blob)}`}
 function download(r,name){const u=URL.createObjectURL(r.blob),a=document.createElement('a');a.href=u;a.download=name||fname(r);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),8000)}
 async function shareBlob(blob,name){
@@ -868,20 +873,25 @@ $('selGo').onclick=()=>{if(picked.length<2){toast('เลือกอย่า�
 $('thumb').onclick=()=>{setSel(false)};
 $('gClose').onclick=()=>{$('gallery').classList.remove('open');selMode=false;gURLs.forEach(u=>URL.revokeObjectURL(u));gURLs=[]};
 
-const KIND_T={collage:'ภาพรวม',post:'ภาพสำหรับลง IG',booth:'โฟโต้บูธ',gif:'GIF',video:'วิดีโอ'};
+const KIND_T={sticker:'สติกเกอร์',dual:'หน้า+หลัง',collage:'ภาพรวม',post:'ภาพสำหรับลง IG',booth:'โฟโต้บูธ',gif:'GIF',video:'วิดีโอ'};
 function openViewer(r){
  cur=r;if(curURL)URL.revokeObjectURL(curURL);curURL=URL.createObjectURL(r.blob);
  const isV=r.kind==='video';$('vImg').style.display=isV?'none':'';$('vVid').style.display=isV?'':'none';
  if(isV){$('vVid').src=curURL;$('vVid').play().catch(()=>{})}else{$('vVid').pause();$('vVid').removeAttribute('src');$('vImg').src=curURL}
  $('vTitle').textContent=KIND_T[r.kind]?(KIND_T[r.kind]+(r.film&&(r.kind==='gif'||isV)?' · '+r.film:'')):r.film;
  $('vMeta').textContent=(r.kind==='photo'?`${r.cam} · ${r.lens} · `:'')+new Date(r.ts).toLocaleString('th-TH')+(r.album?` · 📁 ${r.album}`:'');
- $('vEdit').disabled=!r.orig;$('vPost').disabled=isV||r.kind==='gif';$('viewerWrap').classList.add('open');
+ $('vEdit').disabled=!r.orig;$('vPost').disabled=isV||r.kind==='gif'||r.kind==='sticker';$('viewerWrap').classList.add('open');
 }
 $('vClose').onclick=()=>{$('viewerWrap').classList.remove('open');$('vVid').pause()};
 $('vSave').onclick=()=>{if(cur){download(cur);toast('กำลังดาวน์โหลด…')}};
 $('vShare').onclick=()=>{if(cur)shareBlob(cur.blob,fname(cur))};
 $('vEdit').onclick=()=>{if(cur&&cur.orig)openEditor(cur)};
-$('vPost').onclick=()=>{if(cur)openPost(cur)};
+$('vPost').onclick=()=>{
+ if(!cur)return;const r=cur,box=el('<div class="rows" style="padding-top:0"></div>');
+ box.appendChild(btn('📐 จัดลง IG (4:5 / สตอรี่ / ขอบขาว)','',()=>openPost(r)));
+ box.appendChild(btn('✂️ ตัดตัวคนเป็นสติกเกอร์','sec',()=>{closeSheet();makeSticker(r)}));
+ openSheet('ทำเพิ่ม',box);
+};
 $('vAlb').onclick=()=>{
  if(!cur)return;const box=el('<div class="rows" style="padding-top:0"></div>');
  const move=async name=>{cur.album=name;await store('readwrite',s=>s.put(cur));closeSheet();openViewer(cur);openGallery();toast(name?`ย้ายไป "${name}" แล้ว`:'เอาออกจากอัลบั้มแล้ว')};
@@ -976,6 +986,64 @@ async function saveEd(replace){
 }
 $('eReplace').onclick=()=>saveEd(true);
 $('eSaveNew').onclick=()=>saveEd(false);
+
+/* ================= DUAL (front + back) ================= */
+async function shootDual(){
+ if(!rollOK())return;
+ const first=S.facing;click();flashFx(false);const g1=grabFrame();
+ const c=$('count');c.style.display='grid';c.innerHTML='<div style="font-size:22px">สลับกล้อง…</div>';
+ S.facing=first==='user'?'environment':'user';await startCam();
+ for(let i=0;i<30&&!(stream&&video.videoWidth);i++)await sleep(100);
+ if(!stream||!video.videoWidth){S.facing=first;await startCam();toast('สลับกล้องไม่ได้ ใช้โหมดนี้ไม่ได้ในเครื่องนี้');return}
+ await sleep(500);await countdown(2,'ยิ้ม! 😄');click();flashFx(false);const g2=grabFrame();
+ S.facing=first;startCam();
+ const back=first==='user'?g2:g1,front=first==='user'?g1:g2;
+ $('dev').style.display='grid';$('dev').textContent='กำลังล้างฟิล์ม…';await sleep(40);
+ const o=defaultOpts(),main=develop(back,back.width,back.height,{...o,stamp:false}),ins=develop(front,front.width,front.height,{...o,stamp:false,leak:false,dust:false,max:800});
+ const W=main.width,H=main.height,x=main.getContext('2d'),iw=Math.round(W*.32),ih=Math.round(iw*ins.height/ins.width),m=Math.round(W*.04),bw=Math.max(3,Math.round(W*.006)),rad=Math.round(iw*.12);
+ const rr=(X,Y,w,h,r)=>{x.beginPath();if(x.roundRect)x.roundRect(X,Y,w,h,r);else x.rect(X,Y,w,h)};
+ x.save();x.shadowColor='rgba(0,0,0,.45)';x.shadowBlur=W*.02;x.fillStyle='#111';rr(m-bw,m-bw,iw+2*bw,ih+2*bw,rad+bw);x.fill();x.restore();
+ x.save();rr(m,m,iw,ih,rad);x.clip();x.drawImage(ins,m,m,iw,ih);x.restore();
+ if(o.stamp)drawStamp(x,0,0,W,H,new Date(o.date));
+ await addRecord({kind:'dual',blob:await toBlob(main),film:effFilm().name});useRoll();toast('ได้ภาพหน้า+หลังแล้ว 📸');
+}
+
+/* ================= STICKER CUTOUT ================= */
+async function makeSticker(r){
+ toast('กำลังตัดตัวคน… (ครั้งแรกต้องต่อเน็ต)',6000);
+ try{
+  const img=await blobToBmp(r.blob),src=downscale(img,1080),w=src.width,h=src.height,seg=await getSegmenter(),small=downscale(src,512),res=seg.segment(small),mk0=res.confidenceMasks[0],mw=mk0.width,mh=mk0.height,md=mk0.getAsFloat32Array();
+  const mc=mk(mw,mh),mx=mc.getContext('2d'),id=mx.createImageData(mw,mh);let any=0;
+  for(let i=0;i<md.length;i++){const a=Math.max(0,Math.min(1,(md[i]-.35)/.3));id.data[i*4+3]=a*255;if(a>.5)any++}
+  mx.putImageData(id,0,0);if(res.close)res.close();
+  if(any<md.length*.01){toast('ไม่เจอคนในรูปนี้ ลองรูปที่เห็นตัวคนชัดๆ');return}
+  const M=mk(w,h),Mx=M.getContext('2d');Mx.drawImage(mc,0,0,w,h);
+  const cut=mk(w,h),cx=cut.getContext('2d');cx.drawImage(src,0,0);cx.globalCompositeOperation='destination-in';cx.drawImage(M,0,0);
+  const sil=mk(w,h),sx=sil.getContext('2d');sx.fillStyle='#fff';sx.fillRect(0,0,w,h);sx.globalCompositeOperation='destination-in';sx.drawImage(M,0,0);
+  const t=Math.round(Math.max(w,h)*.018),out=mk(w+4*t,h+4*t),ox=out.getContext('2d');
+  ox.save();ox.shadowColor='rgba(0,0,0,.35)';ox.shadowBlur=t*1.5;ox.drawImage(sil,2*t,2*t);ox.restore();
+  for(let a=0;a<16;a++){const an=a/16*Math.PI*2;ox.drawImage(sil,2*t+Math.cos(an)*t,2*t+Math.sin(an)*t)}
+  ox.drawImage(cut,2*t,2*t);
+  const d=ox.getImageData(0,0,out.width,out.height).data;let x0=out.width,y0=out.height,x1=0,y1=0;
+  for(let y=0;y<out.height;y+=2)for(let x=0;x<out.width;x+=2)if(d[(y*out.width+x)*4+3]>20){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
+  const p=t,fw=Math.min(out.width,x1-x0+2*p),fh=Math.min(out.height,y1-y0+2*p),fin=mk(fw,fh);fin.getContext('2d').drawImage(out,Math.max(0,x0-p),Math.max(0,y0-p),fw,fh,0,0,fw,fh);
+  const blob=await new Promise(res2=>fin.toBlob(res2,'image/png'));
+  const rec=await addRecord({kind:'sticker',blob,album:r.album||''});await openGallery();openViewer(rec);toast('ได้สติกเกอร์แล้ว ✂️ กดแชร์ไป LINE / IG ได้เลย',3000);
+ }catch(e){console.error(e);toast('ทำไม่ได้ ลองต่อเน็ตแล้วลองใหม่')}
+}
+
+/* ================= POLAROID REVEAL ================= */
+function polaroidReveal(blob){
+ const ov=$('reveal'),img=$('revImg'),u=URL.createObjectURL(blob);img.src=u;img.style.filter='brightness(2.6) contrast(.25) saturate(0) sepia(.5) blur(2px)';ov.classList.add('open');
+ let p=0,last=performance.now(),done=false;
+ const onM=e=>{const a=e.accelerationIncludingGravity||e.acceleration;if(!a)return;if(Math.hypot(a.x||0,a.y||0,a.z||0)>17)p+=.05};
+ addEventListener('devicemotion',onM);
+ const finish=()=>{done=true;removeEventListener('devicemotion',onM);img.style.filter='none';setTimeout(()=>{ov.classList.remove('open');URL.revokeObjectURL(u)},900)};
+ const step=t=>{if(done)return;p+=(t-last)/8000;last=t;const q=Math.min(1,p),k=1-q;
+  img.style.filter=`brightness(${(1+1.6*k*k).toFixed(3)}) contrast(${(.25+.75*q).toFixed(3)}) saturate(${q.toFixed(3)}) sepia(${(.5*k).toFixed(3)}) blur(${(2*k).toFixed(2)}px)`;
+  if(q>=1)finish();else requestAnimationFrame(step)};
+ ov.onclick=()=>{p=1};requestAnimationFrame(step);
+}
 
 /* ================= IG POST / COLLAGE ================= */
 const RATIOS=[['4:5',4/5,'ฟีด 4:5'],['9:16',9/16,'สตอรี่ 9:16'],['1:1',1,'จัตุรัส 1:1']];
