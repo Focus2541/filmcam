@@ -884,6 +884,7 @@ async function openGallery(){
  let all=(await getAll()).reverse();if(S.album)all=all.filter(r=>r.album===S.album);
  $('gCount').textContent=all.length?`· ${all.length}`:'';
  if(!all.length){grid.innerHTML=`<div class="empty">${S.album?'อัลบั้มนี้ยังว่าง<br>รูปที่ถ่ายต่อจากนี้จะเข้าอัลบั้มนี้':'ยังไม่มีรูปเลย<br>ไปถ่ายรูปแรกกันเถอะ 🎞️'}</div>`;return}
+ VIEW.list=all.filter(isReady);
  all.forEach(r=>{
   if(!isReady(r)){const t=el(`<div class="tile locked"><div><b>🎞️</b>กำลังล้าง<br>${lockText(r)}</div></div>`);t.onclick=()=>toast(`ยังล้างไม่เสร็จ (${lockText(r)})`);grid.appendChild(t);return}
   const u=URL.createObjectURL(r.blob);gURLs.push(u);const isV=r.kind==='video';
@@ -903,15 +904,32 @@ $('selGo').onclick=()=>{if(picked.length<2){toast('เลือกอย่า�
 $('thumb').onclick=()=>{setSel(false)};
 $('gClose').onclick=()=>{$('gallery').classList.remove('open');selMode=false;gURLs.forEach(u=>URL.revokeObjectURL(u));gURLs=[]};
 
+ const VIEW={list:[],idx:0};
 const KIND_T={sticker:'สติกเกอร์',dual:'หน้า+หลัง',collage:'ภาพรวม',post:'ภาพสำหรับลง IG',booth:'โฟโต้บูธ',gif:'GIF',video:'วิดีโอ'};
-function openViewer(r){
+function openViewer(r,dir){
+ let i=VIEW.list.findIndex(x=>x.id===r.id);if(i<0){VIEW.list=[r];i=0}VIEW.idx=i;
  cur=r;if(curURL)URL.revokeObjectURL(curURL);curURL=URL.createObjectURL(r.blob);
  const isV=r.kind==='video';$('vImg').style.display=isV?'none':'';$('vVid').style.display=isV?'':'none';
  if(isV){$('vVid').src=curURL;$('vVid').play().catch(()=>{})}else{$('vVid').pause();$('vVid').removeAttribute('src');$('vImg').src=curURL}
  $('vTitle').textContent=KIND_T[r.kind]?(KIND_T[r.kind]+(r.film&&(r.kind==='gif'||isV)?' · '+r.film:'')):r.film;
  $('vMeta').textContent=(r.kind==='photo'?`${r.cam} · ${r.lens} · `:'')+new Date(r.ts).toLocaleString('th-TH')+(r.album?` · 📁 ${r.album}`:'');
+ $('vMeta').textContent=`${VIEW.idx+1} / ${VIEW.list.length} · `+$('vMeta').textContent;
+ $('vPrev').disabled=VIEW.idx<=0;$('vNext').disabled=VIEW.idx>=VIEW.list.length-1;
+ const m=isV?$('vVid'):$('vImg');m.style.transition='none';m.style.transform=dir?`translateX(${dir*40}%)`:'none';m.style.opacity=dir?'0':'1';
+ if(dir)requestAnimationFrame(()=>requestAnimationFrame(()=>{m.style.transition='transform .22s ease-out,opacity .22s';m.style.transform='none';m.style.opacity='1'}));
  $('vEdit').disabled=!r.orig;$('vPost').disabled=isV||r.kind==='gif'||r.kind==='sticker';$('viewerWrap').classList.add('open');
 }
+function viewStep(d){const n=VIEW.idx+d;if(n<0||n>=VIEW.list.length){const m=cur&&cur.kind==='video'?$('vVid'):$('vImg');m.style.transition='transform .2s';m.style.transform='none';return}openViewer(VIEW.list[n],d)}
+$('vPrev').onclick=()=>viewStep(-1);$('vNext').onclick=()=>viewStep(1);
+(()=>{
+ const st=$('vStage');let x0=null,y0=0,dx=0,lock=null;
+ st.addEventListener('pointerdown',e=>{if(e.target.closest('.vnav')||(e.target.tagName==='VIDEO'&&e.offsetY>e.target.clientHeight-60))return;x0=e.clientX;y0=e.clientY;dx=0;lock=null});
+ st.addEventListener('pointermove',e=>{if(x0==null)return;dx=e.clientX-x0;const dy=e.clientY-y0;if(!lock&&(Math.abs(dx)>8||Math.abs(dy)>8))lock=Math.abs(dx)>Math.abs(dy)?'x':'y';
+  if(lock==='x'){const m=cur&&cur.kind==='video'?$('vVid'):$('vImg');m.style.transition='none';m.style.transform=`translateX(${dx}px)`}});
+ const end=()=>{if(x0==null)return;x0=null;if(lock!=='x')return;if(dx<-60)viewStep(1);else if(dx>60)viewStep(-1);else{const m=cur&&cur.kind==='video'?$('vVid'):$('vImg');m.style.transition='transform .2s';m.style.transform='none'}};
+ st.addEventListener('pointerup',end);st.addEventListener('pointercancel',end);
+ addEventListener('keydown',e=>{if(!$('viewerWrap').classList.contains('open')||$('editor').classList.contains('open'))return;if(e.key==='ArrowRight')viewStep(1);if(e.key==='ArrowLeft')viewStep(-1)});
+})();
 $('vClose').onclick=()=>{$('viewerWrap').classList.remove('open');$('vVid').pause()};
 $('vSave').onclick=()=>{if(cur){download(cur);toast('กำลังดาวน์โหลด…')}};
 $('vShare').onclick=()=>{if(cur)shareBlob(cur.blob,fname(cur))};
@@ -934,7 +952,8 @@ let delArm=0;
 $('vDel').onclick=async()=>{
  if(!cur)return;if(Date.now()-delArm>2500){delArm=Date.now();$('vDel').innerHTML='<i>⚠️</i>แตะอีกครั้ง';setTimeout(()=>$('vDel').innerHTML='<i>🗑️</i>ลบ',2500);return}
  delArm=0;$('vDel').innerHTML='<i>🗑️</i>ลบ';try{await store('readwrite',s=>s.delete(cur.id))}catch(e){}
- $('viewerWrap').classList.remove('open');$('vVid').pause();openGallery();loadThumb();toast('ลบแล้ว');
+ const at=VIEW.idx;await openGallery();loadThumb();toast('ลบแล้ว');
+ if(VIEW.list.length){openViewer(VIEW.list[Math.min(at,VIEW.list.length-1)])}else{$('viewerWrap').classList.remove('open');$('vVid').pause()}
 };
 
 /* ================= EDITOR ================= */
