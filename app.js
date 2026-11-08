@@ -266,6 +266,16 @@ async function createToneFilm(src){
  const f={id:'my'+Date.now(),name:`ของฉัน ${mine.length+1}`,iso:'★',mine:true,c:[avgColor(refC),'#fff'],match:makeMatch(src,refC),grain:.03};
  mine.push(f);LS.set('myFilms',mine);FILMS.unshift(f);toast(`สร้าง "${f.name}" แล้ว ✨`);return f;
 }
+function manageMyFilm(f){
+ const box=el('<div class="rows" style="padding-top:0"></div>');
+ box.appendChild(el('<div class="lbl">ชื่อฟิล์ม</div>'));
+ const ti=el('<input class="txtin" maxlength="20">');ti.value=f.name;box.appendChild(ti);
+ box.appendChild(btn('💾 บันทึกชื่อ','',()=>{const n=ti.value.trim();if(!n)return;f.name=n;LS.set('myFilms',LS.get('myFilms',[]).map(m=>m.id===f.id?{...m,name:n}:m));applyUI();closeSheet();toast('เปลี่ยนชื่อแล้ว')}));
+ let arm=0;const del=btn('🗑️ ลบฟิล์มนี้','sec',()=>{if(Date.now()-arm>2500){arm=Date.now();del.textContent='⚠️ แตะอีกครั้งเพื่อยืนยันการลบ';return}deleteMyFilm(f.id);applyUI();closeSheet();toast(`ลบ "${f.name}" แล้ว`)});
+ box.appendChild(del);
+ box.appendChild(el('<div class="note">รูปที่ถ่ายด้วยฟิล์มนี้ไปแล้วจะไม่เปลี่ยน</div>'));
+ openSheet('ฟิล์มของฉัน',box);
+}
 function deleteMyFilm(id){const mine=LS.get('myFilms',[]).filter(f=>f.id!==id);LS.set('myFilms',mine);const i=FILMS.findIndex(f=>f.id===id);if(i>=0)FILMS.splice(i,1);if(S.film.id===id){S.film=byId(FILMS,'golden200');LS.set('film',S.film.id)}}
 
 /* ================= PORTRAIT BLUR (MediaPipe, loads on demand) ================= */
@@ -400,6 +410,7 @@ function pick(kind){
   const icon=kind==='film'?canSVG(it):`<div class="ic">${kind==='lens'?(it.circle?'🐟':'🔘'):it.ic}</div>`;
   o.innerHTML=`${icon}<b>${esc(it.name)}</b><span>${kind==='film'?(it.mine?'ฟิล์มของฉัน':'ISO '+it.iso+(it.dark?' · โทนมืด':'')+(it.bw?' · ขาวดำ':'')):it.sub}</span>`;
   o.onclick=()=>{S[kind]=it;LS.set(kind,it.id);applyUI();closeSheet();toast(it.name)};
+  if(it.mine){const m=el('<span class="more" title="แก้ไข/ลบ">✏️</span>');m.onclick=e=>{e.stopPropagation();manageMyFilm(it)};o.appendChild(m)}
   box.appendChild(o);
  });
  openSheet(title,box);

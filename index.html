@@ -59,7 +59,8 @@ button{font:inherit;cursor:pointer}
 .sheet h3{margin:0;padding:10px 18px 8px;font-size:16px;flex:none}
 #sheetBody{overflow:auto;min-height:0}
 .opts{padding:4px 14px 22px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.opt{background:var(--panel);border:2px solid transparent;border-radius:14px;padding:10px 6px;color:var(--ink);text-align:center}
+.opt .more{position:absolute;top:6px;right:6px;width:30px;height:30px;border-radius:50%;background:#0006;display:grid;place-items:center;font-size:14px}
+.opt{position:relative;background:var(--panel);border:2px solid transparent;border-radius:14px;padding:10px 6px;color:var(--ink);text-align:center}
 .opt.active{border-color:var(--amber);background:#2e2924}
 .opt .ic{font-size:28px;height:46px;display:grid;place-items:center}
 .can{width:30px;height:44px;margin:0 auto 4px;border-radius:5px;box-shadow:inset -4px 0 6px #0005}
