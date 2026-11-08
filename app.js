@@ -14,7 +14,8 @@ const CAMS=[
  {id:'_gif',name:'GIF 1:1',aspect:1,hidden:true},
  {id:'_video',name:'Video 9:16',aspect:9/16,hidden:true},
  {id:'_dual',name:'หน้า+หลัง 3:4',aspect:3/4,hidden:true},
- {id:'_auto',name:'ออโต้ 2:3',aspect:2/3,stamp:true,hidden:true}
+ {id:'_auto',name:'ออโต้ 2:3',aspect:2/3,stamp:true,hidden:true},
+ {id:'_preset',name:'โทนสี 3:4',aspect:3/4,clean:true,hidden:true}
 ];
 const LENSES=[
  {id:'35',name:'35mm f2',sub:'มาตรฐาน',vig:.22},
@@ -23,9 +24,11 @@ const LENSES=[
  {id:'85',name:'85mm Portrait',sub:'ซูม 1.7x',vig:.3,zoom:1.7,soft:.15},
  {id:'soft',name:'Soft-Focus',sub:'ฟุ้งฝัน',vig:.3,soft:.5},
  {id:'fish',name:'Fisheye 8mm',sub:'ตาปลาวงกลม',vig:.45,k:.9,circle:true},
- {id:'_digi',name:'Digital Zoom',vig:.05,hidden:true}
+ {id:'_digi',name:'Digital Zoom',vig:.05,hidden:true},
+ {id:'_clean',name:'ไม่มีขอบมืด',vig:0,hidden:true}
 ];
 const FILMS=[
+ {id:'original',name:'Original',iso:'-',orig:1,c:['#9aa3ad','#ffffff']},
  {id:'golden200',name:'Golden 200',iso:200,c:['#f2a93b','#fff1d0'],exp:.05,con:1.08,sat:1.1,temp:.5,fade:.04,sh:[.02,0,-.02],hi:[.04,.02,-.04],grain:.05,halo:.25},
  {id:'tungsten800',name:'Tungsten 800',iso:800,c:['#2f62c9','#dfe8ff'],con:1.1,sat:.95,temp:-.6,fade:.05,sh:[-.02,.01,.05],hi:[0,.01,.04],grain:.09,halo:.35},
  {id:'instantfade',name:'Instant Fade',iso:100,c:['#e8e1d3','#7fb0c9'],con:.85,sat:.8,temp:.15,fade:.12,sh:[.03,.03,.06],hi:[.03,.02,-.02],grain:.04},
@@ -45,11 +48,11 @@ const FILMS=[
  {id:'sepia100',name:'Sepia 100',iso:100,c:['#704214','#f1dcb5'],bw:true,sepia:true,fade:.06,sh:[.07,.02,-.05],hi:[.06,.03,-.04],grain:.05},
  {id:'silver100',name:'Silver 100',iso:100,c:['#c9ccd1','#333'],bw:true,con:1.05,fade:.02,grain:.04},
  {id:'ccd2005',name:'CCD 2005',iso:100,c:['#8a8f99','#29a3ff'],exp:.12,con:1.12,sat:1.25,temp:-.25,tint:-.05,sh:[0,0,.03],hi:[0,.02,.04],grain:.035,halo:.2},
- {id:'sunsetglow200',name:'Sunset Glow 200',iso:200,feat:1,c:['#f0a868','#fbe3d2'],exp:.12,con:.82,sat:.9,temp:.3,tint:-.08,fade:.06,sh:[.03,.01,.01],hi:[.03,.02,0],grain:.03,halo:.35,bloom:.3,vig:.12},
- {id:'tokyobright400',name:'Tokyo Bright 400',iso:400,feat:1,c:['#e8833a','#f4ede0'],exp:.15,con:.85,sat:.82,temp:.18,tint:-.02,fade:.08,sh:[-.01,.025,.035],hi:[.03,.02,-.01],grain:.04,halo:.12,vig:.08},
- {id:'wanderchrome100',name:'Wander Chrome 100',iso:100,feat:1,c:['#6f8a8f','#e6e2d6'],exp:-.02,gam:1.05,con:1.05,sat:.62,temp:-.16,fade:.05,sh:[-.03,.02,.04],hi:[.03,.015,-.02],grain:.04,vig:.15},
- {id:'wanderneg200',name:'Wander Neg 200',iso:200,feat:1,c:['#b5482e','#d9cfc0'],gam:1.08,con:1.15,sat:.85,temp:.1,tint:-.05,fade:.07,sh:[-.02,.03,.04],hi:[.05,.02,-.04],grain:.05,halo:.1,vig:.15},
- {id:'warmmuted200',name:'Warm Muted 200',iso:200,feat:1,c:['#8a6a4f','#e8dccb'],exp:-.05,gam:1.15,dim:.08,con:.92,sat:.65,temp:.28,tint:-.03,fade:.05,sh:[.03,.015,-.01],hi:[.03,.015,-.03],grain:.04,halo:.15,vig:.2},
+ {id:'sunsetglow200',name:'Sunset Glow 200',iso:200,preset:1,c:['#f0a868','#fbe3d2'],exp:.12,con:.82,sat:.9,temp:.3,tint:-.08,fade:.06,sh:[.03,.01,.01],hi:[.03,.02,0],grain:.03,halo:.35,bloom:.3,vig:.12},
+ {id:'tokyobright400',name:'Tokyo Bright 400',iso:400,preset:1,c:['#e8833a','#f4ede0'],exp:.15,con:.85,sat:.82,temp:.18,tint:-.02,fade:.08,sh:[-.01,.025,.035],hi:[.03,.02,-.01],grain:.04,halo:.12,vig:.08},
+ {id:'wanderchrome100',name:'Wander Chrome 100',iso:100,preset:1,c:['#6f8a8f','#e6e2d6'],exp:-.02,gam:1.05,con:1.05,sat:.62,temp:-.16,fade:.05,sh:[-.03,.02,.04],hi:[.03,.015,-.02],grain:.04,vig:.15},
+ {id:'wanderneg200',name:'Wander Neg 200',iso:200,preset:1,c:['#b5482e','#d9cfc0'],gam:1.08,con:1.15,sat:.85,temp:.1,tint:-.05,fade:.07,sh:[-.02,.03,.04],hi:[.05,.02,-.04],grain:.05,halo:.1,vig:.15},
+ {id:'warmmuted200',name:'Warm Muted 200',iso:200,preset:1,c:['#8a6a4f','#e8dccb'],exp:-.05,gam:1.15,dim:.08,con:.92,sat:.65,temp:.28,tint:-.03,fade:.05,sh:[.03,.015,-.01],hi:[.03,.015,-.03],grain:.04,halo:.15,vig:.2},
  {id:'moody400',name:'Moody 400',iso:400,dark:1,c:['#2b2f36','#9aa3ad'],exp:-.1,gam:1.35,dim:.15,con:1.1,sat:.68,temp:-.2,fade:.03,sh:[-.01,.01,.04],hi:[.01,.01,0],grain:.06,vig:.25},
  {id:'darkteal',name:'Dark Teal',iso:400,dark:1,c:['#0f3d3e','#e08a4a'],exp:-.1,gam:1.3,dim:.1,con:1.2,sat:.8,temp:-.3,sh:[-.05,.03,.07],hi:[.04,.02,-.03],grain:.05,vig:.3},
  {id:'bleach',name:'Bleach Bypass',iso:200,dark:1,c:['#6e6e6e','#d8d8d8'],exp:-.05,gam:1.25,dim:.05,con:1.5,sat:.4,temp:-.05,grain:.06,vig:.2},
@@ -61,6 +64,7 @@ const FILMS=[
 ];
 const MODES=[
  {id:'auto',name:'ออโต้',hint:'แอปเลือกฟิล์มให้เองตามแสง เปิดแล้วกดถ่ายได้เลย'},
+ {id:'preset',name:'โทนสี',hint:'โทนสีแบบแต่งรูป ไม่มีเกรน ขอบมืด วันที่ · แตะ "โทน" เพื่อเปลี่ยน'},
  {id:'film',name:'ฟิล์ม',hint:'แตะจอโฟกัส · ลากขึ้น/ลงปรับแสง · แตะสองครั้งรีเซ็ต'},
  {id:'booth',name:'บูธ 4 ช่อง',hint:'กดครั้งเดียว ถ่ายต่อกัน 4 รูป ได้แถบรูปแบบตู้ถ่ายรูป'},
  {id:'dual',name:'หน้า+หลัง',hint:'ถ่ายวิวก่อน แล้วสลับไปถ่ายหน้าเราอัตโนมัติ รวมเป็นรูปเดียว'},
@@ -78,25 +82,25 @@ const LS={get(k,d){try{const v=localStorage.getItem('fc_'+k);return v==null?d:JS
 LS.get('myFilms',[]).forEach(f=>FILMS.unshift(f));
 const byId=(arr,id)=>arr.find(x=>x.id===id)||arr.find(x=>!x.hidden);
 const S={
- cam:byId(CAMS,LS.get('cam')),lens:byId(LENSES,LS.get('lens')),film:byId(FILMS,LS.get('film')),
+ cam:byId(CAMS,LS.get('cam')),lens:byId(LENSES,LS.get('lens')),film:byId(FILMS,LS.get('film','golden200')),
  mode:LS.get('autoStart',true)?'auto':LS.get('mode','film'),autoStart:LS.get('autoStart',true),auto:{film:'skin160',why:'',night:false,cand:null,n:0},facing:LS.get('facing','environment'),
  stamp:LS.get('stamp',true),sound:LS.get('sound',true),grid:LS.get('grid',false),hq:LS.get('hq',false),
  autosave:LS.get('autosave',false),dust:LS.get('dust',false),reveal:LS.get('reveal',true),
  roll:LS.get('roll',36),left:LS.get('left',LS.get('roll',36)),rollId:LS.get('rollId',1),frameNo:LS.get('frameNo',1),
  devMode:LS.get('devMode','instant'),dateMode:LS.get('dateMode','today'),customDate:LS.get('customDate','1998-06-15'),
  albums:LS.get('albums',[]),album:LS.get('album',''),
- timer:LS.get('timer',0),ev:0,torch:false,dbl:false,pending:null
+ preset:LS.get('preset','tokyobright400'),timer:LS.get('timer',0),ev:0,torch:false,dbl:false,pending:null
 };
 if(S.cam.hidden)S.cam=CAMS[0];
 const $=id=>document.getElementById(id);
 const video=$('video');
 let stream=null,track=null,busy=false;
-const effCam=()=>({auto:byId(CAMS,'_auto'),dual:byId(CAMS,'_dual'),booth:byId(CAMS,'_booth'),digi:byId(CAMS,'_digi'),gif:byId(CAMS,'_gif'),video:byId(CAMS,'_video')})[S.mode]||S.cam;
-const effLens=()=>S.mode==='digi'?byId(LENSES,'_digi'):S.mode==='auto'?byId(LENSES,'35'):S.lens;
+const effCam=()=>({preset:byId(CAMS,'_preset'),auto:byId(CAMS,'_auto'),dual:byId(CAMS,'_dual'),booth:byId(CAMS,'_booth'),digi:byId(CAMS,'_digi'),gif:byId(CAMS,'_gif'),video:byId(CAMS,'_video')})[S.mode]||S.cam;
+const effLens=()=>S.mode==='preset'?byId(LENSES,'_clean'):S.mode==='digi'?byId(LENSES,'_digi'):S.mode==='auto'?byId(LENSES,'35'):S.lens;
 const USE=LS.get('filmUse',{});
 function markUse(id){if(!id)return;USE[id]=(USE[id]||0)+1;LS.set('filmUse',USE)}
 function sortByUse(list){return list.slice().sort((a,b)=>(USE[b.id]||0)-(USE[a.id]||0))}
-const effFilm=()=>S.mode==='digi'?byId(FILMS,'ccd2005'):S.mode==='auto'?byId(FILMS,S.auto.film):S.film;
+const effFilm=()=>S.mode==='preset'?byId(FILMS,S.preset):S.mode==='digi'?byId(FILMS,'ccd2005'):S.mode==='auto'?byId(FILMS,S.auto.film):S.film;
 
 /* ================= HELPERS ================= */
 function toast(t,ms=2000){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),ms)}
@@ -248,7 +252,7 @@ function develop(src,sw0,sh0,o){
  let img=x.getImageData(0,0,w,h);
  if(lens.k)img=distort(img,lens.k,lens.circle);
  const I=o.I==null?1:o.I;
- colorize(img,film,{punch:cam.punch,ev:o.ev||0,I,grain:(film.grain||0)*(o.grain==null?1:o.grain),vig:Math.min(.85,((film.vig||0)+lens.vig+(cam.punch?.15:0))*(.4+.6*I)),circle:lens.circle,seed:o.seed});
+ colorize(img,film,{punch:cam.punch,ev:o.ev||0,I,grain:cam.clean?0:(film.grain||0)*(o.grain==null?1:o.grain),vig:cam.clean?0:Math.min(.85,((film.vig||0)+lens.vig+(cam.punch?.15:0))*(.4+.6*I)),circle:lens.circle,seed:o.seed});
  x.putImageData(img,0,0);
  glow(c,x,Math.min(.8,(lens.soft||0)+(film.bloom||0)*I),(film.halo||0)*I);
  if(o.leak)leak(x,w,h,R);
@@ -413,8 +417,8 @@ function loop(){
  const f=effFilm(),l=effLens(),cam=effCam(),cr=cropRect(vw,vh,cam.aspect,l.zoom||1);
  gl.uniform2f(U.uRes,cv.width,cv.height);gl.uniform2f(U.uOff,cr.x/vw,cr.y/vh);gl.uniform2f(U.uSize,cr.w/vw,cr.h/vh);
  gl.uniform1f(U.uK,l.k||0);gl.uniform1f(U.uCircle,l.circle?1:0);gl.uniform1f(U.uMirror,S.facing==='user'?1:0);
- gl.uniform1f(U.uBW,f.bw?1:0);gl.uniform1f(U.uSat,f.sat||1);gl.uniform1f(U.uVig,Math.min(.85,(f.vig||0)+l.vig+(cam.punch?.15:0)));
- gl.uniform1f(U.uGrain,(f.grain||0)*.8);gl.uniform1f(U.uI,1);gl.uniform1f(U.uEvm,Math.pow(2,S.ev));gl.uniform1f(U.uT,(frameT++%97)*13.7);
+ gl.uniform1f(U.uBW,f.bw?1:0);gl.uniform1f(U.uSat,f.sat||1);gl.uniform1f(U.uVig,cam.clean?0:Math.min(.85,(f.vig||0)+l.vig+(cam.punch?.15:0)));
+ gl.uniform1f(U.uGrain,cam.clean?0:(f.grain||0)*.8);gl.uniform1f(U.uI,1);gl.uniform1f(U.uEvm,Math.pow(2,S.ev));gl.uniform1f(U.uT,(frameT++%97)*13.7);
  gl.drawArrays(gl.TRIANGLE_STRIP,0,4);
 }
 function cssFor(f,l){
@@ -452,8 +456,9 @@ setInterval(()=>{
 /* ================= UI ================= */
 function applyUI(){
  const cam=effCam(),lens=effLens(),film=effFilm(),z=lens.zoom||1,mir=S.facing==='user'?'scaleX(-1) ':'';
- $('lblCam').textContent=cam.name;$('lblLens').textContent=lens.name;$('lblFilm').textContent=film.name;
- document.querySelectorAll('.sel').forEach(b=>{const k=b.dataset.kind,locked=S.mode==='digi'||S.mode==='auto'||(k==='cam'&&cam.hidden);b.classList.toggle('locked',locked)});
+ $('lblCam').textContent=cam.name;$('lblLens').textContent=S.mode==='preset'?'—':lens.name;$('lblFilm').textContent=S.mode==='preset'?film.name.replace(/ \d+$/,''):film.name;
+ document.querySelector('.sel[data-kind=film] small').textContent=S.mode==='preset'?'TONE':'FILM';
+ document.querySelectorAll('.sel').forEach(b=>{const k=b.dataset.kind,locked=S.mode==='digi'||S.mode==='auto'||(S.mode==='preset'&&k!=='film')||(k==='cam'&&cam.hidden);b.classList.toggle('locked',locked)});
  if(GL.ok){$('live').style.display='block';video.style.opacity='0';$('vig').style.background='none';$('circle').style.display='none';updateLUT()}
  else{video.style.filter=cssFor(film,lens);video.style.transform=`${mir}scale(${z})`;
   const v=Math.min(.8,(film.vig||0)+lens.vig);$('vig').style.background=`radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,${v}) 100%)`;
@@ -485,8 +490,9 @@ $('scrim').onclick=closeSheet;
 function pick(kind){
  if(S.mode==='digi'){toast('โหมดดิจิ 2000 ใช้กล้อง เลนส์ และสีแบบกล้องดิจิทัลเก่า');return}
  if(S.mode==='auto'){toast('โหมดออโต้เลือกให้เอง · อยากเลือกเองให้แตะโหมด "ฟิล์ม"',2600);return}
+ if(S.mode==='preset'){if(kind==='film')pickPreset();else toast('โหมดโทนสีไม่มีกล้อง/เลนส์ฟิล์ม · เลือกได้แค่โทน');return}
  if(kind==='cam'&&effCam().hidden){toast('โหมดนี้ใช้ขนาดภาพเฉพาะ เปลี่ยนกล้องได้ในโหมดฟิล์ม');return}
- const list={cam:CAMS,lens:LENSES,film:FILMS}[kind].filter(x=>!x.hidden),title={cam:'เลือกกล้อง',lens:'เลือกเลนส์',film:'เลือกฟิล์ม'}[kind];
+ const list={cam:CAMS,lens:LENSES,film:FILMS}[kind].filter(x=>!x.hidden&&!x.preset),title={cam:'เลือกกล้อง',lens:'เลือกเลนส์',film:'เลือกฟิล์ม'}[kind];
  const box=el('<div class="opts"></div>');
  if(kind==='film'){
   const add=el('<button class="opt"><div class="ic">🎯</div><b>ก๊อปโทนจากรูป</b><span>เลือกรูปที่ชอบ</span></button>');
@@ -496,20 +502,28 @@ function pick(kind){
  const mkOpt=it=>{
   const o=el(`<button class="opt${S[kind].id===it.id?' active':''}"></button>`);
   const icon=kind==='film'?canSVG(it):`<div class="ic">${kind==='lens'?(it.circle?'🐟':'🔘'):it.ic}</div>`;
-  o.innerHTML=`${icon}<b>${esc(it.name)}</b><span>${kind==='film'?(it.mine?'ฟิล์มของฉัน':it.feat?'✨ ไฮไลท์':'ISO '+it.iso+(it.dark?' · โทนมืด':'')+(it.bw?' · ขาวดำ':'')):it.sub}</span>`;
+  o.innerHTML=`${icon}<b>${esc(it.name)}</b><span>${kind==='film'?(it.mine?'ฟิล์มของฉัน':it.orig?'สีจริง ไม่ใส่ฟิล์ม':'ISO '+it.iso+(it.dark?' · โทนมืด':'')+(it.bw?' · ขาวดำ':'')):it.sub}</span>`;
   o.onclick=()=>{S[kind]=it;LS.set(kind,it.id);if(kind==='film')markUse(it.id);applyUI();closeSheet();toast(it.name)};
   if(it.mine){const m=el('<span class="more" title="แก้ไข/แชร์/ลบ">✏️</span>');m.onclick=e=>{e.stopPropagation();manageMyFilm(it)};o.appendChild(m)}
   return o;
  };
  if(kind==='film'){
   const wrap=el('<div></div>'),sec=(t,items)=>{if(!items.length)return;wrap.appendChild(el(`<div class="lbl" style="padding:0 18px">${t}</div>`));const fb=el('<div class="opts" style="padding-bottom:6px"></div>');items.forEach(it=>fb.appendChild(mkOpt(it)));wrap.appendChild(fb)};
-  sec('✨ ไฮไลท์',list.filter(f=>f.feat));
-  sec('⭐ ใช้บ่อย',sortByUse(list).filter(f=>USE[f.id]>0&&!f.feat).slice(0,6));
+  sec('⭐ ใช้บ่อย',sortByUse(list).filter(f=>USE[f.id]>0&&!f.orig).slice(0,6));
   wrap.appendChild(el('<div class="lbl" style="padding:0 18px">ฟิล์มทั้งหมด</div>'));wrap.appendChild(box);
   list.forEach(it=>box.appendChild(mkOpt(it)));openSheet(title,wrap);return;
  }
  list.forEach(it=>box.appendChild(mkOpt(it)));
  openSheet(title,box);
+}
+function pickPreset(){
+ const box=el('<div class="opts"></div>');
+ FILMS.filter(f=>f.preset||f.orig).sort((a,b)=>(b.orig?1:0)-(a.orig?1:0)).forEach(it=>{
+  const o=el(`<button class="opt${S.preset===it.id?' active':''}">${canSVG(it)}<b>${esc(it.name.replace(/ \d+$/,''))}</b><span>${it.orig?'สีจริงจากกล้อง':'ไม่มีเกรน'}</span></button>`);
+  o.onclick=()=>{S.preset=it.id;LS.set('preset',it.id);markUse(it.id);applyUI();closeSheet();toast(it.name.replace(/ \d+$/,''))};box.appendChild(o);
+ });
+ box.appendChild(el('<div class="note" style="grid-column:1/-1">โหมดนี้ให้สีแบบแต่งรูปในแอป ไม่มีเกรน ไม่มีขอบมืด ไม่มีวันที่ อยากได้แบบฟิล์มให้ใช้โหมด "ฟิล์ม"</div>'));
+ openSheet('เลือกโทนสี',box);
 }
 document.querySelectorAll('.sel').forEach(b=>b.onclick=()=>pick(b.dataset.kind));
 
@@ -996,7 +1010,7 @@ function renderEd(){
 function setTab(t){E.tab=t;document.querySelectorAll('#eTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
  const P=$('ePanel');P.innerHTML='';
  if(t==='film'||t==='cam'||t==='lens'){
-  let list={film:FILMS,cam:CAMS,lens:LENSES}[t].filter(x=>!x.hidden||x.id===E.o[t]),box=el('<div class="chips"></div>');if(t==='film'){list=sortByUse(list);list=[...list.filter(f=>f.feat),...list.filter(f=>!f.feat)]}
+  let list={film:FILMS,cam:CAMS,lens:LENSES}[t].filter(x=>!x.hidden||x.id===E.o[t]),box=el('<div class="chips"></div>');if(t==='film'){list=sortByUse(list);list=[...list.filter(f=>f.orig),...list.filter(f=>f.preset),...list.filter(f=>!f.preset&&!f.orig)]}
   if(t==='film'){const add=el('<button class="chip"><span class="ic">🎯</span>ก๊อปโทน</button>');add.onclick=async()=>{const f=await createToneFilm(E.bmp);if(f){E.o.film=f.id;E.o.filmObj=f;setTab('film');renderEd()}};box.appendChild(add)}
   list.forEach(it=>{const b=el(`<button class="chip${E.o[t]===it.id?' active':''}"></button>`);
    b.innerHTML=(t==='film'?canSVG(it):`<span class="ic">${t==='lens'?(it.circle?'🐟':'🔘'):(it.ic||'📷')}</span>`)+esc(it.name);
