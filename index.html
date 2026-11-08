@@ -117,7 +117,9 @@ button{font:inherit;cursor:pointer}
 .lbl{font-size:12px;color:var(--mute);margin-top:10px}
 .prev{display:flex;justify-content:center;padding:6px 0;background:#0c0b0a;border-radius:12px;margin:4px 0 6px}
 .prev canvas{max-width:100%;max-height:34dvh;display:block}
-.modes{display:flex;gap:4px;justify-content:center;overflow-x:auto;padding:4px 10px 0;scrollbar-width:none}
+.modes>:first-child{margin-left:auto}
+.modes>:last-child{margin-right:auto}
+.modes{display:flex;gap:4px;justify-content:flex-start;overflow-x:auto;padding:4px 10px 0;scrollbar-width:none}
 .modes::-webkit-scrollbar{display:none}
 .modes button{flex:none;background:none;border:none;color:var(--mute);font-size:13px;padding:6px 10px;border-radius:14px;letter-spacing:.5px}
 .modes button.on{color:#1a1714;background:var(--amber);font-weight:700}

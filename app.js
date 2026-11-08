@@ -13,7 +13,8 @@ const CAMS=[
  {id:'_digi',name:'Digicam 2005',aspect:3/4,stamp:true,stampStyle:'digi',punch:true,hidden:true},
  {id:'_gif',name:'GIF 1:1',aspect:1,hidden:true},
  {id:'_video',name:'Video 9:16',aspect:9/16,hidden:true},
- {id:'_dual',name:'หน้า+หลัง 3:4',aspect:3/4,hidden:true}
+ {id:'_dual',name:'หน้า+หลัง 3:4',aspect:3/4,hidden:true},
+ {id:'_auto',name:'ออโต้ 2:3',aspect:2/3,stamp:true,hidden:true}
 ];
 const LENSES=[
  {id:'35',name:'35mm f2',sub:'มาตรฐาน',vig:.22},
@@ -55,6 +56,7 @@ const FILMS=[
  {id:'inknoir',name:'Ink Noir',iso:1600,dark:1,c:['#000','#444'],bw:true,exp:-.1,gam:1.4,dim:.1,con:1.7,grain:.12,vig:.35}
 ];
 const MODES=[
+ {id:'auto',name:'ออโต้',hint:'แอปเลือกฟิล์มให้เองตามแสง เปิดแล้วกดถ่ายได้เลย'},
  {id:'film',name:'ฟิล์ม',hint:'แตะจอโฟกัส · ลากขึ้น/ลงปรับแสง · แตะสองครั้งรีเซ็ต'},
  {id:'booth',name:'บูธ 4 ช่อง',hint:'กดครั้งเดียว ถ่ายต่อกัน 4 รูป ได้แถบรูปแบบตู้ถ่ายรูป'},
  {id:'dual',name:'หน้า+หลัง',hint:'ถ่ายวิวก่อน แล้วสลับไปถ่ายหน้าเราอัตโนมัติ รวมเป็นรูปเดียว'},
@@ -73,7 +75,7 @@ LS.get('myFilms',[]).forEach(f=>FILMS.unshift(f));
 const byId=(arr,id)=>arr.find(x=>x.id===id)||arr.find(x=>!x.hidden);
 const S={
  cam:byId(CAMS,LS.get('cam')),lens:byId(LENSES,LS.get('lens')),film:byId(FILMS,LS.get('film')),
- mode:LS.get('mode','film'),facing:LS.get('facing','environment'),
+ mode:LS.get('autoStart',true)?'auto':LS.get('mode','film'),autoStart:LS.get('autoStart',true),auto:{film:'skin160',why:'',night:false,cand:null,n:0},facing:LS.get('facing','environment'),
  stamp:LS.get('stamp',true),sound:LS.get('sound',true),grid:LS.get('grid',false),hq:LS.get('hq',false),
  autosave:LS.get('autosave',false),dust:LS.get('dust',false),reveal:LS.get('reveal',true),
  roll:LS.get('roll',36),left:LS.get('left',LS.get('roll',36)),rollId:LS.get('rollId',1),frameNo:LS.get('frameNo',1),
@@ -85,12 +87,12 @@ if(S.cam.hidden)S.cam=CAMS[0];
 const $=id=>document.getElementById(id);
 const video=$('video');
 let stream=null,track=null,busy=false;
-const effCam=()=>({dual:byId(CAMS,'_dual'),booth:byId(CAMS,'_booth'),digi:byId(CAMS,'_digi'),gif:byId(CAMS,'_gif'),video:byId(CAMS,'_video')})[S.mode]||S.cam;
-const effLens=()=>S.mode==='digi'?byId(LENSES,'_digi'):S.lens;
+const effCam=()=>({auto:byId(CAMS,'_auto'),dual:byId(CAMS,'_dual'),booth:byId(CAMS,'_booth'),digi:byId(CAMS,'_digi'),gif:byId(CAMS,'_gif'),video:byId(CAMS,'_video')})[S.mode]||S.cam;
+const effLens=()=>S.mode==='digi'?byId(LENSES,'_digi'):S.mode==='auto'?byId(LENSES,'35'):S.lens;
 const USE=LS.get('filmUse',{});
 function markUse(id){if(!id)return;USE[id]=(USE[id]||0)+1;LS.set('filmUse',USE)}
 function sortByUse(list){return list.slice().sort((a,b)=>(USE[b.id]||0)-(USE[a.id]||0))}
-const effFilm=()=>S.mode==='digi'?byId(FILMS,'ccd2005'):S.film;
+const effFilm=()=>S.mode==='digi'?byId(FILMS,'ccd2005'):S.mode==='auto'?byId(FILMS,S.auto.film):S.film;
 
 /* ================= HELPERS ================= */
 function toast(t,ms=2000){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),ms)}
@@ -419,11 +421,35 @@ function cssFor(f,l){
  return a.join(' ');
 }
 
+/* ================= AUTO SCENE ================= */
+const autoCv=mk(32,24);
+function sceneChoice(){
+ const x=autoCv.getContext('2d',{willReadFrequently:true});x.drawImage(video,0,0,32,24);const d=x.getImageData(0,0,32,24).data;
+ let r=0,g=0,b=0,sat=0;const n=d.length/4;
+ for(let i=0;i<d.length;i+=4){const R=d[i],G=d[i+1],B=d[i+2],mx=Math.max(R,G,B),mn=Math.min(R,G,B);r+=R;g+=G;b+=B;sat+=mx?(mx-mn)/mx:0}
+ r/=n;g/=n;b/=n;sat/=n;const l=.299*r+.587*g+.114*b,warm=r-b,green=g-(r+b)/2,blue=b-r,h=new Date().getHours();
+ if(l<45)return{film:'cine500t',night:true,why:'🌙 มืด ถ่ายแบบกลางคืนให้'};
+ if(warm>28&&l<140)return{film:'warmmuted200',why:'💡 ไฟในห้อง'};
+ if(h>=16&&h<19&&warm>8&&l>=90)return{film:'golden200',why:'🌇 แดดเย็น'};
+ if(blue>12&&l>110)return{film:'coastal100',why:'🌊 ฟ้า/ทะเล'};
+ if(green>12)return{film:'mint400',why:'🌿 ต้นไม้'};
+ if(l>150&&sat>.35)return{film:'sunny400',why:'☀️ แดดจ้า'};
+ if(sat<.18)return{film:'pastel160',why:'☁️ ฟ้าครึ้ม'};
+ return{film:'skin160',why:'🙂 ทั่วไป'};
+}
+setInterval(()=>{
+ if(S.mode!=='auto'||!stream||!video.videoWidth||busy||document.hidden)return;
+ let c;try{c=sceneChoice()}catch(e){return}
+ const A=S.auto;if(c.film===A.film&&c.why===A.why)return;
+ if(A.cand===c.why)A.n++;else{A.cand=c.why;A.n=1}
+ if(A.n>=2||!A.why){A.film=c.film;A.why=c.why;A.night=!!c.night;A.cand=null;applyUI()}
+},900);
+
 /* ================= UI ================= */
 function applyUI(){
  const cam=effCam(),lens=effLens(),film=effFilm(),z=lens.zoom||1,mir=S.facing==='user'?'scaleX(-1) ':'';
  $('lblCam').textContent=cam.name;$('lblLens').textContent=lens.name;$('lblFilm').textContent=film.name;
- document.querySelectorAll('.sel').forEach(b=>{const k=b.dataset.kind,locked=S.mode==='digi'||(k==='cam'&&cam.hidden);b.classList.toggle('locked',locked)});
+ document.querySelectorAll('.sel').forEach(b=>{const k=b.dataset.kind,locked=S.mode==='digi'||S.mode==='auto'||(k==='cam'&&cam.hidden);b.classList.toggle('locked',locked)});
  if(GL.ok){$('live').style.display='block';video.style.opacity='0';$('vig').style.background='none';$('circle').style.display='none';updateLUT()}
  else{video.style.filter=cssFor(film,lens);video.style.transform=`${mir}scale(${z})`;
   const v=Math.min(.8,(film.vig||0)+lens.vig);$('vig').style.background=`radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,${v}) 100%)`;
@@ -434,11 +460,11 @@ function applyUI(){
  $('stamp').style.color=cam.stampStyle==='digi'?'#ffae1a':'';
  $('counter').textContent=S.roll?pad2(Math.max(0,S.left)):'∞';
  $('btnTimer').innerHTML=S.timer?`<small>${S.timer}s</small>`:'⏱';$('btnTimer').classList.toggle('on',!!S.timer);
- $('btnTimer').style.display=['film','digi','night'].includes(S.mode)?'grid':'none';
+ $('btnTimer').style.display=['auto','film','digi','night'].includes(S.mode)?'grid':'none';
  $('btnDbl').style.display=S.mode==='film'?'grid':'none';
  $('btnDbl').classList.toggle('on',S.dbl);$('dblLbl').style.display=S.dbl&&S.mode==='film'?'block':'none';
  $('dblLbl').textContent=S.pending?'ภาพซ้อน 2/2':'ภาพซ้อน 1/2';
- $('hint').textContent=(MODES.find(m=>m.id===S.mode)||MODES[0]).hint;
+ $('hint').textContent=S.mode==='auto'&&S.auto.why?`ออโต้เลือก ${effFilm().name} · ${S.auto.why}`:(MODES.find(m=>m.id===S.mode)||MODES[0]).hint;
  $('shutter').classList.toggle('vid',S.mode==='video');
  document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.mode));
  fitVF();
@@ -454,6 +480,7 @@ $('scrim').onclick=closeSheet;
 
 function pick(kind){
  if(S.mode==='digi'){toast('โหมดดิจิ 2000 ใช้กล้อง เลนส์ และสีแบบกล้องดิจิทัลเก่า');return}
+ if(S.mode==='auto'){toast('โหมดออโต้เลือกให้เอง · อยากเลือกเองให้แตะโหมด "ฟิล์ม"',2600);return}
  if(kind==='cam'&&effCam().hidden){toast('โหมดนี้ใช้ขนาดภาพเฉพาะ เปลี่ยนกล้องได้ในโหมดฟิล์ม');return}
  const list={cam:CAMS,lens:LENSES,film:FILMS}[kind].filter(x=>!x.hidden),title={cam:'เลือกกล้อง',lens:'เลือกเลนส์',film:'เลือกฟิล์ม'}[kind];
  const box=el('<div class="opts"></div>');
@@ -495,6 +522,7 @@ $('btnSettings').onclick=()=>{
  box.appendChild(btn('📥 กู้คืนจากไฟล์สำรอง','sec',()=>{closeSheet();restoreBackup()}));
  const lb=LS.get('lastBackup',0);box.appendChild(el(`<div class="note" style="padding:6px 0 4px">${lb?'สำรองล่าสุด '+new Date(lb).toLocaleDateString('th-TH'):'ยังไม่เคยสำรองรูป'} · ไฟล์สำรองเลือกเก็บใน Google Drive ได้ตอนกดแชร์</div>`));
  const b=(k,label)=>toggleRow(box,label,()=>S[k],v=>{S[k]=v;LS.set(k,v);applyUI()});
+ toggleRow(box,'เปิดแอปมาเป็นโหมดออโต้เสมอ',()=>S.autoStart,v=>{S.autoStart=v;LS.set('autoStart',v)});
  b('stamp','แสดงวันที่บนรูป');
  selectRow(box,'วันที่ที่ใช้',[['today','วันนี้'],['custom','กำหนดเอง']],()=>S.dateMode,v=>{S.dateMode=v;LS.set('dateMode',v);dateIn.style.display=v==='custom'?'flex':'none';applyUI()});
  const dateIn=el(`<div class="row"><span>เลือกวันที่</span><input type="date"></div>`);const di=dateIn.querySelector('input');di.value=S.customDate;di.onchange=()=>{if(di.value){S.customDate=di.value;LS.set('customDate',di.value);applyUI()}};box.appendChild(dateIn);dateIn.style.display=S.dateMode==='custom'?'flex':'none';
@@ -611,7 +639,7 @@ $('shutter').onclick=async()=>{
 async function shootStill(){
  if(!rollOK())return;
  if(S.timer)await countdown(S.timer);
- const night=S.mode==='night',digi=S.mode==='digi';
+ const night=S.mode==='night'||(S.mode==='auto'&&S.auto.night),digi=S.mode==='digi';
  await torchOn();click();flashFx(S.torch||digi||effCam().punch);
  let g;
  if(night){$('dev').style.display='grid';$('dev').textContent='ถือนิ่งๆ…';g=await nightStack(8);$('dev').textContent='กำลังล้างฟิล์ม…'}
