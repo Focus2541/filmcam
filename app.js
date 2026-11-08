@@ -84,6 +84,9 @@ const video=$('video');
 let stream=null,track=null,busy=false;
 const effCam=()=>({booth:byId(CAMS,'_booth'),digi:byId(CAMS,'_digi'),gif:byId(CAMS,'_gif'),video:byId(CAMS,'_video')})[S.mode]||S.cam;
 const effLens=()=>S.mode==='digi'?byId(LENSES,'_digi'):S.lens;
+const USE=LS.get('filmUse',{});
+function markUse(id){if(!id)return;USE[id]=(USE[id]||0)+1;LS.set('filmUse',USE)}
+function sortByUse(list){return list.slice().sort((a,b)=>(USE[b.id]||0)-(USE[a.id]||0))}
 const effFilm=()=>S.mode==='digi'?byId(FILMS,'ccd2005'):S.film;
 
 /* ================= HELPERS ================= */
@@ -273,8 +276,59 @@ function manageMyFilm(f){
  box.appendChild(btn('💾 บันทึกชื่อ','',()=>{const n=ti.value.trim();if(!n)return;f.name=n;LS.set('myFilms',LS.get('myFilms',[]).map(m=>m.id===f.id?{...m,name:n}:m));applyUI();closeSheet();toast('เปลี่ยนชื่อแล้ว')}));
  let arm=0;const del=btn('🗑️ ลบฟิล์มนี้','sec',()=>{if(Date.now()-arm>2500){arm=Date.now();del.textContent='⚠️ แตะอีกครั้งเพื่อยืนยันการลบ';return}deleteMyFilm(f.id);applyUI();closeSheet();toast(`ลบ "${f.name}" แล้ว`)});
  box.appendChild(del);
+ box.appendChild(btn('📤 แชร์ฟิล์มนี้ให้เพื่อน','sec',()=>shareFilm(f)));
  box.appendChild(el('<div class="note">รูปที่ถ่ายด้วยฟิล์มนี้ไปแล้วจะไม่เปลี่ยน</div>'));
  openSheet('ฟิล์มของฉัน',box);
+}
+/* share = 33 points per channel (LUT is smooth) packed into a short link */
+const b64u={enc:u8=>btoa(String.fromCharCode(...u8)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''),dec:s=>{s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return Uint8Array.from(atob(s),c=>c.charCodeAt(0))}};
+function filmLink(f){
+ const pts=new Uint8Array(99);for(let c=0;c<3;c++)for(let i=0;i<33;i++)pts[c*33+i]=f.match[c][Math.min(255,i*8)];
+ const base=location.href.split('#')[0].split('?')[0];
+ return `${base}#film=${encodeURIComponent(f.name)}.${f.c[0].slice(1)}.${b64u.enc(pts)}`;
+}
+function parseFilmLink(h){
+ const m=/^#film=([^.]*)\.([0-9a-fA-F]{6})\.([\w-]+)$/.exec(h);if(!m)return null;
+ const pts=b64u.dec(m[3]);if(pts.length!==99)return null;
+ const match=[0,1,2].map(c=>{const a=new Array(256);for(let v=0;v<256;v++){const x=v/8,i=Math.min(31,Math.floor(x)),t=x-i,p0=pts[c*33+i],p1=pts[c*33+i+1];a[v]=Math.round(p0+(p1-p0)*t)}return a});
+ return {name:decodeURIComponent(m[1]).slice(0,20)||'ฟิล์มจากเพื่อน',color:'#'+m[2],match};
+}
+let qrLib=null;
+function loadQR(){if(!qrLib)qrLib=new Promise((res,rej)=>{const s=document.createElement('script');s.src='qrcode.js';s.onload=()=>res(window.qrcode);s.onerror=e=>{qrLib=null;rej(e)};document.head.appendChild(s)});return qrLib}
+async function qrCard(url,f){
+ const qrcode=await loadQR(),q=qrcode(0,'M');q.addData(url);q.make();
+ const n=q.getModuleCount(),cell=Math.floor(560/(n+8)),sz=cell*(n+8),W=sz+80,H=sz+250,c=mk(W,H),x=c.getContext('2d');
+ x.fillStyle='#f3efe6';x.fillRect(0,0,W,H);
+ x.fillStyle='#fff';x.fillRect(40,40,sz,sz);x.fillStyle='#111';
+ for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(q.isDark(r,k))x.fillRect(40+(k+4)*cell,40+(r+4)*cell,cell,cell);
+ x.textAlign='center';x.fillStyle='#2b2521';x.font='700 34px system-ui,sans-serif';x.fillText('🎞️ '+f.name,W/2,sz+100);
+ x.font='20px system-ui,sans-serif';x.fillStyle='#6b6157';x.fillText('สแกนเพื่อรับฟิล์มนี้ใน FilmCam',W/2,sz+145);
+ x.fillStyle=f.c[0];x.fillRect(W/2-60,sz+175,120,14);
+ return c;
+}
+async function shareFilm(f){
+ const url=filmLink(f),box=el('<div class="rows" style="padding-top:0"></div>'),prev=el('<div class="prev"></div>');box.appendChild(prev);
+ let card=null;try{card=await qrCard(url,f);prev.appendChild(card)}catch(e){prev.textContent='สร้าง QR ไม่ได้'}
+ box.appendChild(el('<div class="note" style="padding-top:4px">ให้เพื่อนสแกน QR หรือส่งลิงก์ไป เพื่อนเปิดแล้วกด "เพิ่มฟิล์มนี้" ได้เลย</div>'));
+ box.appendChild(btn('📤 แชร์ลิงก์ (LINE / Messenger)','',async()=>{if(navigator.share){try{await navigator.share({title:'ฟิล์ม '+f.name,text:`ลองฟิล์ม "${f.name}" ใน FilmCam สิ`,url})}catch(e){}}else copyText(url)}));
+ box.appendChild(btn('📋 คัดลอกลิงก์','sec',()=>copyText(url)));
+ if(card)box.appendChild(btn('🖼️ แชร์รูป QR','sec',async()=>shareBlob(await new Promise(r=>card.toBlob(r,'image/png')),`FilmCam_${f.name}.png`)));
+ openSheet('แชร์ฟิล์ม',box);
+}
+async function copyText(t){try{await navigator.clipboard.writeText(t);toast('คัดลอกลิงก์แล้ว')}catch(e){prompt('คัดลอกลิงก์นี้',t)}}
+function checkFilmLink(){
+ const d=parseFilmLink(location.hash);if(!location.hash.startsWith('#film='))return;
+ history.replaceState(null,'',location.pathname);
+ if(!d){toast('ลิงก์ฟิล์มไม่ถูกต้อง');return}
+ const box=el('<div class="rows" style="padding-top:0"></div>');
+ box.appendChild(el(`<div style="text-align:center;padding:10px 0">${canSVG({c:[d.color,'#fff']})}<div style="font-size:18px;font-weight:700;margin-top:6px">${esc(d.name)}</div><div class="note" style="padding-top:4px">เพื่อนแชร์ฟิล์มนี้มาให้คุณ</div></div>`));
+ box.appendChild(btn('➕ เพิ่มฟิล์มนี้แล้วใช้เลย','',()=>{
+  const mine=LS.get('myFilms',[]);let name=d.name;if(mine.some(m=>m.name===name))name+=' (เพื่อน)';
+  const f={id:'my'+Date.now(),name,iso:'★',mine:true,c:[d.color,'#fff'],match:d.match,grain:.03};
+  mine.push(f);LS.set('myFilms',mine);FILMS.unshift(f);S.film=f;LS.set('film',f.id);if(S.mode==='digi')setMode('film');applyUI();closeSheet();toast(`เพิ่ม "${name}" แล้ว ✨`);
+ }));
+ box.appendChild(btn('ไม่เป็นไร','sec',closeSheet));
+ openSheet('ได้ฟิล์มใหม่ 🎁',box);
 }
 function deleteMyFilm(id){const mine=LS.get('myFilms',[]).filter(f=>f.id!==id);LS.set('myFilms',mine);const i=FILMS.findIndex(f=>f.id===id);if(i>=0)FILMS.splice(i,1);if(S.film.id===id){S.film=byId(FILMS,'golden200');LS.set('film',S.film.id)}}
 
@@ -391,7 +445,7 @@ addEventListener('resize',fitVF);
 MODES.forEach(m=>{const b=el(`<button data-m="${m.id}">${m.name}</button>`);b.onclick=()=>setMode(m.id);$('modes').appendChild(b)});
 function setMode(m){if(REC.on||busy)return;S.mode=m;LS.set('mode',m);if(m!=='film'&&S.dbl){S.dbl=false;clearPending()}applyUI();const b=document.querySelector(`#modes [data-m="${m}"]`);if(b)b.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'})}
 
-function openSheet(title,body){$('sheetTitle').textContent=title;const b=$('sheetBody');b.innerHTML='';b.appendChild(body);$('sheet').classList.add('open');$('scrim').classList.add('open')}
+function openSheet(title,body){$('sheetTitle').textContent=title;const b=$('sheetBody');b.innerHTML='';b.appendChild(body);b.scrollTop=0;$('sheet').classList.add('open');$('scrim').classList.add('open')}
 function closeSheet(){$('sheet').classList.remove('open');$('scrim').classList.remove('open')}
 $('scrim').onclick=closeSheet;
 
@@ -405,14 +459,24 @@ function pick(kind){
   add.onclick=async()=>{if(!stream||!video.videoWidth){toast('ต้องเปิดกล้องก่อน หรือก๊อปโทนในหน้าแต่งรูปแทน');return}closeSheet();const f=await createToneFilm(grabFrame());if(f){S.film=f;LS.set('film',f.id);applyUI()}};
   box.appendChild(add);
  }
- list.forEach(it=>{
+ const mkOpt=it=>{
   const o=el(`<button class="opt${S[kind].id===it.id?' active':''}"></button>`);
   const icon=kind==='film'?canSVG(it):`<div class="ic">${kind==='lens'?(it.circle?'🐟':'🔘'):it.ic}</div>`;
   o.innerHTML=`${icon}<b>${esc(it.name)}</b><span>${kind==='film'?(it.mine?'ฟิล์มของฉัน':'ISO '+it.iso+(it.dark?' · โทนมืด':'')+(it.bw?' · ขาวดำ':'')):it.sub}</span>`;
-  o.onclick=()=>{S[kind]=it;LS.set(kind,it.id);applyUI();closeSheet();toast(it.name)};
-  if(it.mine){const m=el('<span class="more" title="แก้ไข/ลบ">✏️</span>');m.onclick=e=>{e.stopPropagation();manageMyFilm(it)};o.appendChild(m)}
-  box.appendChild(o);
- });
+  o.onclick=()=>{S[kind]=it;LS.set(kind,it.id);if(kind==='film')markUse(it.id);applyUI();closeSheet();toast(it.name)};
+  if(it.mine){const m=el('<span class="more" title="แก้ไข/แชร์/ลบ">✏️</span>');m.onclick=e=>{e.stopPropagation();manageMyFilm(it)};o.appendChild(m)}
+  return o;
+ };
+ if(kind==='film'){
+  const fav=sortByUse(list).filter(f=>USE[f.id]>0).slice(0,6);
+  if(fav.length){
+   const wrap=el('<div></div>');wrap.appendChild(el('<div class="lbl" style="padding:0 18px">⭐ ใช้บ่อย</div>'));
+   const fb=el('<div class="opts" style="padding-bottom:6px"></div>');fav.forEach(it=>fb.appendChild(mkOpt(it)));wrap.appendChild(fb);
+   wrap.appendChild(el('<div class="lbl" style="padding:0 18px">ฟิล์มทั้งหมด</div>'));wrap.appendChild(box);
+   list.forEach(it=>box.appendChild(mkOpt(it)));openSheet(title,wrap);return;
+  }
+ }
+ list.forEach(it=>box.appendChild(mkOpt(it)));
  openSheet(title,box);
 }
 document.querySelectorAll('.sel').forEach(b=>b.onclick=()=>pick(b.dataset.kind));
@@ -668,6 +732,7 @@ function isReady(r){
 function lockText(r){if(r.lock.t==='time'){const m=Math.ceil((r.lock.until-Date.now())/60000);return `อีก ${m} นาที`}return 'รอหมดม้วน'}
 function metaOf(o){return{film:(o.filmObj||byId(FILMS,o.film)).name,cam:byId(CAMS,o.cam).name,lens:byId(LENSES,o.lens).name}}
 async function saveShot(raw,o,w,h,imported){
+ markUse(o.film);
  const out=develop(raw,w,h,o);
  const [blob,orig]=await Promise.all([toBlob(out),toBlob(downscale(raw,2560),.9)]);
  const rec={kind:'photo',ts:Date.now(),blob,orig,o,album:S.album,...metaOf(o)};
@@ -854,11 +919,11 @@ function renderEd(){
 function setTab(t){E.tab=t;document.querySelectorAll('#eTabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
  const P=$('ePanel');P.innerHTML='';
  if(t==='film'||t==='cam'||t==='lens'){
-  const list={film:FILMS,cam:CAMS,lens:LENSES}[t].filter(x=>!x.hidden||x.id===E.o[t]),box=el('<div class="chips"></div>');
+  let list={film:FILMS,cam:CAMS,lens:LENSES}[t].filter(x=>!x.hidden||x.id===E.o[t]),box=el('<div class="chips"></div>');if(t==='film')list=sortByUse(list);
   if(t==='film'){const add=el('<button class="chip"><span class="ic">🎯</span>ก๊อปโทน</button>');add.onclick=async()=>{const f=await createToneFilm(E.bmp);if(f){E.o.film=f.id;E.o.filmObj=f;setTab('film');renderEd()}};box.appendChild(add)}
   list.forEach(it=>{const b=el(`<button class="chip${E.o[t]===it.id?' active':''}"></button>`);
    b.innerHTML=(t==='film'?canSVG(it):`<span class="ic">${t==='lens'?(it.circle?'🐟':'🔘'):(it.ic||'📷')}</span>`)+esc(it.name);
-   b.onclick=()=>{E.o[t]=it.id;if(t==='film')E.o.filmObj=it.mine?it:undefined;if(t==='cam'){E.o.leak=!!it.leak}box.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');renderEd()};box.appendChild(b)});
+   b.onclick=()=>{E.o[t]=it.id;if(t==='film'){E.o.filmObj=it.mine?it:undefined;markUse(it.id)}if(t==='cam'){E.o.leak=!!it.leak}box.querySelectorAll('.chip').forEach(x=>x.classList.remove('active'));b.classList.add('active');renderEd()};box.appendChild(b)});
   P.appendChild(box);
   if(t==='film')P.appendChild(el('<div class="note" style="padding:0 16px">เลื่อนซ้าย-ขวาดูฟิล์มทั้งหมด · 🎯 ก๊อปโทน = เลือกรูปที่ชอบ แล้วแอปปรับรูปนี้ให้โทนเดียวกัน</div>'));
   setTimeout(()=>{const a=box.querySelector('.active');if(a)a.scrollIntoView({inline:'center',block:'nearest'})},0);
@@ -981,6 +1046,7 @@ async function openCollage(recs){
 
 /* ================= INIT ================= */
 initGL();applyUI();startCam();loadThumb();requestAnimationFrame(loop);
+checkFilmLink();addEventListener('hashchange',checkFilmLink);
 setTimeout(()=>{const b=document.querySelector('#modes .on');if(b)b.scrollIntoView({inline:'center',block:'nearest'})},300);
 setInterval(()=>{$('stamp').textContent=dateStr(stampDate(),effCam().stampStyle);loadThumb();if($('gallery').classList.contains('open')&&!selMode)openGallery()},60000);
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
