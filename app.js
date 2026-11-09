@@ -48,6 +48,7 @@ const FILMS=[
  {id:'sepia100',name:'Sepia 100',iso:100,c:['#704214','#f1dcb5'],bw:true,sepia:true,fade:.06,sh:[.07,.02,-.05],hi:[.06,.03,-.04],grain:.05},
  {id:'silver100',name:'Silver 100',iso:100,c:['#c9ccd1','#333'],bw:true,con:1.05,fade:.02,grain:.04},
  {id:'ccd2005',name:'CCD 2005',iso:100,c:['#8a8f99','#29a3ff'],exp:.12,con:1.12,sat:1.25,temp:-.25,tint:-.05,sh:[0,0,.03],hi:[0,.02,.04],grain:.035,halo:.2},
+ {id:'daylight200',name:'Daylight 200',iso:200,preset:1,c:['#f2c230','#3a8fd0'],gam:1.06,con:1.25,sat:1.04,temp:.06,fade:.01,sh:[-.02,0,.03],hi:[.03,.02,-.01],grain:.05,vig:.15,hsl:[[0,.08,0],[0,.1,0],[-3,.2,.02],[6,-.12,-.03],[0,-.15,0],[-8,-.22,.05]]},
  {id:'sunsetglow200',name:'Sunset Glow 200',iso:200,preset:1,c:['#f0a868','#fbe3d2'],exp:.12,con:.82,sat:.9,temp:.3,tint:-.08,fade:.06,sh:[.03,.01,.01],hi:[.03,.02,0],grain:.03,halo:.35,bloom:.3,vig:.12,hsl:[[0,.05,0],[3,.05,.03],[-4,-.1,.02],[12,-.35,0],[0,-.3,0],[-4,-.3,.05]]},
  {id:'tokyobright400',name:'Tokyo Bright 400',iso:400,preset:1,c:['#e8833a','#f4ede0'],exp:.15,con:.85,sat:.92,temp:.18,tint:-.02,fade:.08,sh:[-.01,.025,.035],hi:[.03,.02,-.01],grain:.04,halo:.12,vig:.08,hsl:[[0,.12,0],[-2,.28,.03],[-6,-.12,.03],[28,-.45,0],[6,-.25,0],[-6,-.35,.05]]},
  {id:'wanderchrome100',name:'Wander Chrome 100',iso:100,preset:1,c:['#6f8a8f','#e6e2d6'],exp:-.02,gam:1.05,con:1.05,sat:.78,temp:-.16,fade:.05,sh:[-.03,.02,.04],hi:[.03,.015,-.02],grain:.04,vig:.15,hsl:[[0,.06,-.03],[0,0,0],[-6,-.25,0],[22,-.45,-.05],[0,-.3,0],[-6,-.35,.03]]},
